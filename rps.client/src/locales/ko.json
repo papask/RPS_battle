@@ -1,0 +1,57 @@
+{
+    "app_title": "가위바위보 배틀",
+    "login": {
+        "enter_nickname": "닉네임을 입력하세요",
+        "play": "게임 시작",
+        "logging_in": "로그인 중...",
+        "welcome": "환영합니다!"
+    },
+    "lobby": {
+        "welcome": "환영합니다, {{name}}님!",
+        "hearts": "하트",
+        "tokens": "토큰",
+        "wins": "승",
+        "losses": "패",
+        "find_match": "매칭 시작",
+        "searching": "상대 찾는 중...",
+        "cancel": "취소",
+        "modes": {
+            "normal": "일반",
+            "rank": "랭크",
+            "hardcore": "하드코어"
+        },
+        "create_room": "방 만들기",
+        "join_room": "방 참가",
+        "room_id_placeholder": "방 ID",
+        "not_enough_hearts": "하트가 부족합니다!"
+    },
+    "game": {
+        "vs": "VS",
+        "you": "(나)",
+        "waiting_opponent": "상대방을 기다리는 중...",
+        "ready": "준비 완료!",
+        "start_game": "게임 시작",
+        "round": "라운드 {{round}}",
+        "moves": {
+            "rock": "바위",
+            "paper": "보",
+            "scissors": "가위"
+        },
+        "result": {
+            "victory": "승리!",
+            "defeat": "패배",
+            "draw": "무승부!",
+            "you_won": "이겼습니다!",
+            "you_lost": "졌습니다!",
+            "congrats": "축하합니다!",
+            "better_luck": "다음 기회에...",
+            "opponent_disconnected": "상대방 연결 끊김"
+        },
+        "full": "방이 꽉 찼습니다",
+        "next_round": "곧 다음 라운드가 시작됩니다...",
+        "leave": "나가기",
+        "back_to_lobby": "로비로 돌아가기",
+        "copy": "복사",
+        "status": "상태"
+    }
+}

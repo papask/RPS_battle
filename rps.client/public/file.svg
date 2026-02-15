@@ -1,0 +1,73 @@
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 40" shape-rendering="crispEdges">
+  <!-- 
+    Pixel Art SVG (Low Resolution 80x40 scaled up) 
+    1 unit = 1 pixel
+  -->
+  <defs>
+    <style>
+      .sky { fill: #87CEEB; }
+      .cloud { fill: #FFFFFF; }
+      .grass { fill: #4CAF50; }
+      .dirt { fill: #795548; }
+      .title { fill: #FFEB3B; stroke: #3E2723; stroke-width: 0.5; font-family: monospace; font-weight: 900; }
+      .title-shadow { fill: #3E2723; font-family: monospace; font-weight: 900; }
+      .icon-bg { fill: rgba(255,255,255,0.3); }
+    </style>
+  </defs>
+
+  <!-- Sky Background -->
+  <rect x="0" y="0" width="80" height="40" class="sky" />
+
+  <!-- Pixel Clouds -->
+  <!-- Cloud 1 -->
+  <rect x="10" y="5" width="8" height="2" class="cloud" />
+  <rect x="8" y="7" width="14" height="3" class="cloud" />
+  <rect x="12" y="10" width="8" height="1" class="cloud" />
+  
+  <!-- Cloud 2 -->
+  <rect x="60" y="8" width="6" height="2" class="cloud" />
+  <rect x="58" y="10" width="10" height="2" class="cloud" />
+
+  <!-- Cloud 3 -->
+  <rect x="35" y="12" width="10" height="3" class="cloud" opacity="0.7"/>
+
+  <!-- Ground -->
+  <rect x="0" y="32" width="80" height="2" class="grass" />
+  <rect x="0" y="34" width="80" height="6" class="dirt" />
+  <!-- Grass Details -->
+  <rect x="5" y="32" width="1" height="1" fill="#81C784" />
+  <rect x="15" y="32" width="1" height="1" fill="#81C784" />
+  <rect x="70" y="32" width="1" height="1" fill="#81C784" />
+
+  <!-- Simple Pixel Icons (Rock / Paper / Scissors) -->
+  <g transform="translate(25, 20)">
+      <!-- Rock Block -->
+      <rect x="0" y="0" width="6" height="6" fill="#9E9E9E" />
+      <rect x="1" y="1" width="4" height="4" fill="#BDBDBD" />
+  </g>
+  
+  <g transform="translate(37, 20)">
+      <!-- Paper Scroll -->
+      <rect x="0" y="0" width="5" height="7" fill="#FFF59D" />
+      <rect x="1" y="2" width="3" height="1" fill="#FBC02D" /> <!-- Lines -->
+      <rect x="1" y="4" width="3" height="1" fill="#FBC02D" />
+  </g>
+  
+  <g transform="translate(48, 20)">
+      <!-- Scissors -->
+       <path d="M1,1 L3,3 M4,1 L2,3 M2,3 L2,5 M3,3 L3,5" stroke="#F44336" stroke-width="1" fill="none" />
+       <!-- Handles -->
+       <rect x="1" y="5" width="2" height="2" rx="0.5" fill="none" stroke="#F44336" stroke-width="0.5"/>
+       <rect x="3" y="5" width="2" height="2" rx="0.5" fill="none" stroke="#F44336" stroke-width="0.5"/>
+  </g>
+
+
+  <!-- Title Text (Simulated Pixel Font via SVG Text, utilizing small viewbox) -->
+  <text x="40.5" y="16" text-anchor="middle" font-size="8" class="title-shadow">R.P.S Battle</text>
+  <text x="40" y="15.5" text-anchor="middle" font-size="8" class="title">R.P.S Battle</text>
+  
+  <!-- Subtitle -->
+  <rect x="30" y="18" width="20" height="4" fill="#FF5722" rx="1" />
+  <text x="40" y="20.5" text-anchor="middle" font-size="2" fill="white" font-family="monospace" font-weight="bold">Working Title</text>
+
+</svg>

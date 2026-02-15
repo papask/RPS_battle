@@ -1,0 +1,57 @@
+{
+    "app_title": "RPS Battle",
+    "login": {
+        "enter_nickname": "Enter your nickname",
+        "play": "PLAY",
+        "logging_in": "Logging in...",
+        "welcome": "Welcome back!"
+    },
+    "lobby": {
+        "welcome": "Welcome, {{name}}!",
+        "hearts": "Hearts",
+        "wins": "Wins",
+        "losses": "Losses",
+        "tokens": "Tokens",
+        "modes": {
+            "normal": "Normal",
+            "rank": "Rank",
+            "hardcore": "Hardcore"
+        },
+        "searching": "Searching for opponent...",
+        "cancel": "Cancel",
+        "find_match": "Find Match",
+        "create_room": "Create Room",
+        "join_room": "Join Room",
+        "room_id_placeholder": "Room ID",
+        "not_enough_hearts": "Not enough hearts!"
+    },
+    "game": {
+        "copy": "COPY",
+        "status": "Status",
+        "leave": "Leave",
+        "you": "(You)",
+        "vs": "VS",
+        "waiting_opponent": "Waiting for opponent...",
+        "ready": "Both players ready!",
+        "start_game": "START GAME",
+        "round": "Round {{round}}",
+        "moves": {
+            "rock": "Rock",
+            "paper": "Paper",
+            "scissors": "Scissors"
+        },
+        "result": {
+            "draw": "It's a Draw!",
+            "you_won": "You Won!",
+            "you_lost": "You Lost!",
+            "victory": "VICTORY!",
+            "defeat": "DEFEAT",
+            "opponent_disconnected": "Opponent Disconnected",
+            "congrats": "Congratulations!",
+            "better_luck": "Better luck next time."
+        },
+        "full": "Room is full",
+        "next_round": "Next round starting soon...",
+        "back_to_lobby": "Back to Lobby"
+    }
+}

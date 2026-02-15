@@ -1,0 +1,8 @@
+node_modules/
+.next/
+dist/
+.env
+.DS_Store
+Thumbs.db
+PROJECT_SPEC.md
+PROJECT_SPEC.md
