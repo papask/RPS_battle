@@ -1,4 +1,3 @@
-
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUserDocument extends Document {
@@ -6,11 +5,13 @@ export interface IUserDocument extends Document {
         provider: 'temp' | 'google' | 'kakao';
         socialId: string;
         email?: string;
+        privateToken?: string;
     };
     profile: {
         nickname: string;
         avatarUrl?: string;
         equippedSkin?: string;
+        equippedItems?: string[];
     };
     assets: {
         hearts: number;
@@ -18,15 +19,43 @@ export interface IUserDocument extends Document {
         tokens: number;
     };
     stats: {
-        wins: number;
-        losses: number;
+        normal: {
+            wins: number;
+            losses: number;
+        };
+        rank: {
+            elo: number;
+            tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond' | 'Master';
+            division: number;
+            serverRank?: number;
+            wins: number;
+            losses: number;
+            currentStreak: number;
+        };
+        hardcore: {
+            currentStreak: number;
+            bestStreak: number;
+            seasonBestStreak: number;
+            wins: number;
+            losses: number;
+        };
     };
-    rank: {
-        elo: number;
-        tier: string;
-        division: number;
+    behavior: {
+        rockCount: number;
+        paperCount: number;
+        scissorsCount: number;
+        recentMoves: string[];
     };
+    inventory: {
+        itemId: string;
+        count: number;
+    }[];
+    cooldowns?: {
+        shield?: Date;
+    };
+    activeEffects?: string[];
     createdAt: Date;
+    updatedAt: Date;
 }
 
 const UserSchema: Schema = new Schema({
@@ -34,12 +63,13 @@ const UserSchema: Schema = new Schema({
         provider: { type: String, required: true, enum: ['temp', 'google', 'kakao'], default: 'temp' },
         socialId: { type: String, required: true, unique: true },
         email: { type: String },
-        privateToken: { type: String, unique: true, sparse: true }, // For persistent session
+        privateToken: { type: String, unique: true, sparse: true },
     },
     profile: {
         nickname: { type: String, required: true },
         avatarUrl: { type: String },
         equippedSkin: { type: String },
+        equippedItems: { type: [String], default: [] },
     },
     assets: {
         hearts: { type: Number, default: 5, max: 5 },
@@ -47,14 +77,41 @@ const UserSchema: Schema = new Schema({
         tokens: { type: Number, default: 0 },
     },
     stats: {
-        wins: { type: Number, default: 0 },
-        losses: { type: Number, default: 0 },
+        normal: {
+            wins: { type: Number, default: 0 },
+            losses: { type: Number, default: 0 }
+        },
+        rank: {
+            elo: { type: Number, default: 1000 },
+            tier: { type: String, default: 'Bronze', enum: ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Master'] },
+            division: { type: Number, default: 4 },
+            serverRank: { type: Number },
+            wins: { type: Number, default: 0 },
+            losses: { type: Number, default: 0 },
+            currentStreak: { type: Number, default: 0 },
+        },
+        hardcore: {
+            currentStreak: { type: Number, default: 0 },
+            bestStreak: { type: Number, default: 0 },
+            seasonBestStreak: { type: Number, default: 0 },
+            wins: { type: Number, default: 0 },
+            losses: { type: Number, default: 0 },
+        }
     },
-    rank: {
-        elo: { type: Number, default: 1000 },
-        tier: { type: String, default: 'Bronze' },
-        division: { type: Number, default: 4 },
+    behavior: {
+        rockCount: { type: Number, default: 0 },
+        paperCount: { type: Number, default: 0 },
+        scissorsCount: { type: Number, default: 0 },
+        recentMoves: { type: [String], default: [] }
     },
+    inventory: [{
+        itemId: { type: String, required: true },
+        count: { type: Number, default: 1 }
+    }],
+    cooldowns: {
+        shield: { type: Date }
+    },
+    activeEffects: [{ type: String }] // e.g., ['shield']
 }, { timestamps: true });
 
 export default mongoose.model<IUserDocument>('User', UserSchema);

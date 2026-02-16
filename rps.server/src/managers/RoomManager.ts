@@ -87,7 +87,26 @@ export class RoomManager {
         // Initialize defaults if not present
         if (user.hearts === undefined) user.hearts = 5;
         if (user.tokens === undefined) user.tokens = 0;
-        if (!user.stats) user.stats = { wins: 0, losses: 0 };
+        if (!user.stats) {
+            user.stats = {
+                normal: { wins: 0, losses: 0 },
+                rank: {
+                    elo: 1000,
+                    tier: 'Bronze',
+                    division: 4,
+                    wins: 0,
+                    losses: 0,
+                    currentStreak: 0
+                },
+                hardcore: {
+                    currentStreak: 0,
+                    bestStreak: 0,
+                    seasonBestStreak: 0,
+                    wins: 0,
+                    losses: 0
+                }
+            };
+        }
         this.users.set(user.id, user);
     }
 

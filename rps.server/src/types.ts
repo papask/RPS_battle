@@ -1,5 +1,4 @@
 
-
 export type GameMode = 'normal' | 'rank' | 'hardcore';
 
 export interface IUser {
@@ -8,15 +7,42 @@ export interface IUser {
     roomId?: string;
     isDisconnected?: boolean;
     disconnectTimeout?: NodeJS.Timeout;
+
     // Database Fields (Synced)
     _id?: string; // MongoDB ID
     hearts: number;
     tokens: number;
     stats: {
-        wins: number;
-        losses: number;
+        normal: {
+            wins: number;
+            losses: number;
+        };
+        rank: {
+            elo: number;
+            tier: string;
+            division: number;
+            serverRank?: number;
+            wins?: number;
+            losses?: number;
+            currentStreak?: number;
+        };
+        hardcore: {
+            currentStreak: number;
+            bestStreak: number;
+            seasonBestStreak: number;
+            wins?: number;
+            losses?: number;
+        };
     };
-    nextHeartAt?: number; // Timestamp for next heart recovery
+    behavior?: {
+        rockCount: number;
+        paperCount: number;
+        scissorsCount: number;
+        recentMoves?: string[];
+    };
+    inventory?: { itemId: string; count: number }[];
+    equippedItems?: string[];
+    nextHeartAt?: number;
 }
 
 export type GameStatus = 'WAITING' | 'PLAYING' | 'ROUND_RESULT' | 'GAME_OVER';
@@ -25,7 +51,14 @@ export type Move = 'rock' | 'paper' | 'scissors' | null;
 export interface IPlayerState extends IUser {
     score: number;
     move: Move;
-    isReady: boolean;
+    isReady?: boolean;
+    sessionMoves?: string[];
+    activeHint?: {
+        message: string;
+        type?: 'history' | 'count';
+        moves?: string[];
+        data?: any;
+    } | null;
 }
 
 export interface IRoom {

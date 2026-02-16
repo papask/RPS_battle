@@ -13,17 +13,23 @@
         "wins": "승",
         "losses": "패",
         "find_match": "매칭 시작",
+        "quick_match": "빠른 대전",
         "searching": "상대 찾는 중...",
         "cancel": "취소",
+        "rank": "랭크",
+        "current_streak": "현재 연승",
+        "best_streak": "최고 연승",
         "modes": {
             "normal": "일반",
             "rank": "랭크",
             "hardcore": "하드코어"
         },
         "create_room": "방 만들기",
+        "leaderboard": "순위표",
         "join_room": "방 참가",
         "room_id_placeholder": "방 ID",
-        "not_enough_hearts": "하트가 부족합니다!"
+        "not_enough_hearts": "하트가 부족합니다!",
+        "match_found": "상대 찾기 성공!"
     },
     "game": {
         "vs": "VS",

@@ -19,6 +19,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
     const [me, setMe] = useState<IPlayerState | null>(null);
 
     const [gameOverReason, setGameOverReason] = useState<string | null>(null);
+    const [eloChanges, setEloChanges] = useState<{ [key: string]: number } | null>(null);
 
     useEffect(() => {
         if (socket && !isAuthLoading) {
@@ -42,9 +43,12 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
                 if (myState) setMe(myState);
             });
 
-            socket.on('game_over', (data: { winnerId: string, reason?: string }) => {
+            socket.on('game_over', (data: { winnerId: string, reason?: string, eloChanges?: { [key: string]: number } }) => {
                 if (data.reason) {
                     setGameOverReason(data.reason);
+                }
+                if (data.eloChanges) {
+                    setEloChanges(data.eloChanges);
                 }
             });
 
@@ -97,85 +101,120 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
     // Wait for Auth to Load AND Room to Load
     if (isAuthLoading || !room || !me) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-                {isAuthLoading ? 'Authenticating...' : `Loading Room ${roomId}...`}
+            <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8">
+                <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <div className="text-gray-400 font-bold animate-pulse">
+                    {isAuthLoading ? 'Authenticating...' : `Loading Room ${roomId}...`}
+                </div>
             </div>
         );
     }
 
     return (
-        <main className="flex min-h-screen flex-col items-center p-8 bg-gray-900 text-white font-sans">
+        <main className="flex flex-col items-center px-4 pt-24 pb-24 font-sans w-full">
             {/* Header */}
-            <div className="w-full max-w-5xl flex justify-between items-center mb-12 p-4 bg-gray-800 rounded-lg shadow-md">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-gray-200">Room: <span className="text-white">{room.id}</span></h1>
-                    <button
-                        onClick={() => {
-                            navigator.clipboard.writeText(room.id);
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs font-bold transition"
-                    >
-                        {t('game.copy')}
-                    </button>
+            <div className="w-full flex justify-between items-center mb-8 p-3 bg-gray-900/50 backdrop-blur-md rounded-2xl border border-gray-800 shadow-xl">
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Room ID</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl font-black text-white tracking-widest">{room.id}</span>
+                        <button
+                            onClick={() => navigator.clipboard.writeText(room.id)}
+                            className="bg-gray-800 hover:bg-gray-700 p-1.5 rounded-lg text-gray-400 hover:text-white transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div className="flex gap-4">
-                    <div className="text-yellow-400 font-bold px-4 py-2 bg-gray-900 rounded border border-yellow-600">
-                        {t('game.status')}: {room.gameState}
+
+                <div className="flex items-center gap-3">
+                    <div className={`px-2 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-wider ${room.gameState === 'WAITING' ? 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500' :
+                        room.gameState === 'PLAYING' ? 'bg-green-500/10 border-green-500/50 text-green-500' :
+                            'bg-gray-800 border-gray-700 text-gray-400'
+                        }`}>
+                        {room.gameState}
                     </div>
                     <button
                         onClick={() => {
                             if (socket) socket.emit('leave_room', room.id);
                             router.push('/');
                         }}
-                        className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-white text-sm font-semibold transition"
+                        className="bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 p-2 rounded-xl transition-colors"
                     >
-                        {t('game.leave')}
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                        </svg>
                     </button>
                 </div>
             </div>
 
             {/* Game Area */}
-            <div className="flex flex-col items-center w-full max-w-5xl">
+            <div className="flex flex-col items-center w-full">
 
                 {/* Score Board */}
-                <div className="flex justify-between w-full mb-12 px-12 items-center">
-                    {room.players.map((p, i) => (
-                        <div key={p.id || i} className={`flex flex-col items-center ${p.id === me?.id ? 'order-1' : 'order-3'}`}>
-                            <div className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl font-bold mb-4 shadow-lg
-                         ${p.id === me?.id ? 'bg-blue-600 border-4 border-blue-400' : 'bg-red-600 border-4 border-red-400'}`}>
-                                {p.nickname.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="text-2xl font-bold">{p.nickname} {p.id === me?.id && t('game.you')}</div>
-                            <div className="text-5xl font-black mt-2 text-gray-200">{p.score}</div>
-                        </div>
-                    ))}
-
-                    {/* VS Divider */}
-                    <div className="order-2 flex flex-col justify-center items-center">
-                        <div className="text-6xl font-black text-gray-700 italic">{t('game.vs')}</div>
+                <div className="flex justify-between w-full mb-12 px-6 items-center relative">
+                    {/* VS Background Text */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[100px] font-black text-gray-800/30 italic select-none pointer-events-none z-0">
+                        VS
                     </div>
+
+                    {room.players.map((p, i) => {
+                        const isMe = p.id === me?.id;
+                        return (
+                            <div key={p.id || i} className={`relative z-10 flex flex-col items-center flex-1 ${isMe ? 'order-1' : 'order-3'}`}>
+                                <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl font-bold mb-3 shadow-2xl border-4 
+                                    ${isMe
+                                        ? 'bg-gradient-to-br from-blue-500 to-cyan-600 border-blue-400/50 shadow-blue-500/50'
+                                        : 'bg-gradient-to-br from-red-500 to-pink-600 border-red-400/50 shadow-red-500/50'}`}>
+                                    {p.nickname.charAt(0).toUpperCase()}
+                                </div>
+                                <div className={`text-sm font-bold mb-1 ${isMe ? 'text-blue-400' : 'text-red-400'}`}>
+                                    {p.nickname} {isMe && '(You)'}
+                                </div>
+                                <div className="text-4xl font-black text-white drop-shadow-lg">{p.score}</div>
+                            </div>
+                        );
+                    })}
                 </div>
 
                 {/* Main Interaction Area */}
-                <div className="w-full min-h-[400px] flex flex-col items-center justify-center bg-gray-800/50 rounded-2xl border-2 border-gray-700 p-8 backdrop-blur-sm">
+                <div className="w-full min-h-[300px] flex flex-col items-center justify-center">
                     {room.gameState === 'WAITING' ? (
-                        <div className="text-center">
+                        <div className="text-center w-full">
                             {room.players.length < 2 ? (
-                                <div className="text-2xl text-gray-400 animate-pulse">{t('game.waiting_opponent')}</div>
+                                <div className="flex flex-col items-center animate-pulse">
+                                    <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center text-3xl mb-4 border-2 border-gray-700 border-dashed">
+                                        ?
+                                    </div>
+                                    <div className="text-xl font-bold text-gray-400">{t('game.waiting_opponent')}</div>
+                                    <div className="text-xs text-gray-600 mt-2 uppercase tracking-wide">Waiting for player to join...</div>
+                                </div>
                             ) : (
-                                <div className="flex flex-col gap-4">
-                                    <div className="text-2xl text-green-400 font-bold mb-4">{t('game.ready')}</div>
+                                <div className="flex flex-col gap-6 w-full max-w-xs mx-auto">
+                                    <div className="text-xl text-green-400 font-bold tracking-wider uppercase animate-pulse">Opponent Found!</div>
                                     <button
                                         onClick={handleStartGame}
-                                        className="bg-yellow-500 hover:bg-yellow-600 text-black text-xl font-bold px-8 py-4 rounded-full shadow-lg hover:shadow-yellow-500/50 transition-all transform hover:scale-105"
+                                        className="w-full py-4 rounded-xl font-black text-xl uppercase tracking-widest shadow-xl transition-all transform active:scale-95 relative overflow-hidden group bg-white"
                                     >
-                                        {t('game.start_game')}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 bg-[length:200%_auto] animate-[gradient_3s_linear_infinite]" />
+                                        <span className="relative z-10 text-white drop-shadow-md">
+                                            {t('game.start_game')}
+                                        </span>
                                     </button>
                                 </div>
                             )}
                         </div>
                     ) : (
-                        <GameBoard room={room} me={me} gameOverReason={gameOverReason} />
+                        // Merge Auth User activeHint into GameBoard me prop
+                        // This ensures that even if room.players doesn't have the hint (yet), the user_updated event (handled by AuthProvider) delivers it.
+                        <GameBoard
+                            room={room}
+                            me={me ? { ...me, activeHint: user?.activeHint } : me}
+                            gameOverReason={gameOverReason}
+                            eloChanges={eloChanges}
+                        />
                     )}
                 </div>
 

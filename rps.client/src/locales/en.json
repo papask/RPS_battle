@@ -12,6 +12,9 @@
         "wins": "Wins",
         "losses": "Losses",
         "tokens": "Tokens",
+        "rank": "Rank",
+        "current_streak": "Streak",
+        "best_streak": "Best Streak",
         "modes": {
             "normal": "Normal",
             "rank": "Rank",
@@ -20,10 +23,13 @@
         "searching": "Searching for opponent...",
         "cancel": "Cancel",
         "find_match": "Find Match",
+        "quick_match": "Quick Match",
         "create_room": "Create Room",
+        "leaderboard": "Leaderboard",
         "join_room": "Join Room",
         "room_id_placeholder": "Room ID",
-        "not_enough_hearts": "Not enough hearts!"
+        "not_enough_hearts": "Not enough hearts!",
+        "match_found": "Match Found!"
     },
     "game": {
         "copy": "COPY",
