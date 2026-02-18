@@ -76,7 +76,7 @@ export default function LeaderboardPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-3xl font-black text-center text-transparent bg-clip-text bg-gradient-to-br from-yellow-400 to-orange-600 drop-shadow-lg uppercase tracking-wide"
                 >
-                    {t('lobby.leaderboard')}
+                    {t('rank.title')}
                 </motion.h1>
 
                 <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-700/50 overflow-hidden">
@@ -85,23 +85,23 @@ export default function LeaderboardPage() {
                             <thead className="bg-gray-800 text-gray-400 uppercase text-[10px] font-bold tracking-wider">
                                 <tr>
                                     <th className="px-4 py-3">#</th>
-                                    <th className="px-4 py-3">Player</th>
-                                    <th className="px-4 py-3">Rank</th>
-                                    <th className="px-4 py-3 text-center">W/L</th>
-                                    <th className="px-4 py-3 text-center">Streak</th>
+                                    <th className="px-4 py-3">{t('rank.player')}</th>
+                                    <th className="px-4 py-3">{t('rank.tier')}</th>
+                                    <th className="px-4 py-3 text-center">{t('rank.wl')}</th>
+                                    <th className="px-4 py-3 text-center">{t('rank.streak')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-700/50">
                                 {loading ? (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center text-gray-500 animate-pulse">
-                                            Loading...
+                                            {t('rank.loading')}
                                         </td>
                                     </tr>
                                 ) : leaderboard.length === 0 ? (
                                     <tr>
                                         <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                                            No data available
+                                            {t('rank.no_data')}
                                         </td>
                                     </tr>
                                 ) : (

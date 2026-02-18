@@ -59,5 +59,71 @@
         "back_to_lobby": "로비로 돌아가기",
         "copy": "복사",
         "status": "상태"
+    },
+    "home": {
+        "welcome": "환영합니다, {{name}}님!",
+        "ready_message": "아레나를 지배할 준비가 되셨나요?",
+        "ranked_wins": "랭킹전 승리",
+        "current_elo": "현재 점수",
+        "battle_now": "배틀 시작"
+    },
+    "battle": {
+        "energy": "에너지",
+        "select_mode": "모드 선택",
+        "redirecting": "이동 중...",
+        "mode_label": "모드: {{mode}}"
+    },
+    "profile": {
+        "title": "프로필",
+        "performance": "전적",
+        "inventory": "인벤토리",
+        "empty_inventory": "인벤토리가 비어있습니다.",
+        "wins": "승",
+        "losses": "패",
+        "streak": "연승",
+        "elo": "점수",
+        "rank": "등급",
+        "equip": "장착",
+        "unequip": "해제",
+        "equipped": "장착중"
+    },
+    "navigation": {
+        "home": "홈",
+        "shop": "상점",
+        "battle": "배틀",
+        "rank": "랭킹",
+        "profile": "프로필"
+    },
+    "shop": {
+        "title": "아이템 상점",
+        "buy": "구매",
+        "bought": "보유중",
+        "cost": "{{cost}} 💎",
+        "insufficient_funds": "잔액 부족",
+        "purchase_failed": "구매 실패",
+        "user_not_identified": "유저 정보 없음",
+        "hardcore_only": "하드코어 전용",
+        "daily_limit": "1일 1회",
+        "success": "구매 성공!",
+        "items": {
+            "item_hint": {
+                "name": "힌트",
+                "description": "상대의 다음 수를 1라운드 동안 엿봅니다"
+            },
+            "item_shield": {
+                "name": "랭크 방어권",
+                "description": "패배 시 연승 초기화를 자동으로 막아줍니다"
+            }
+        }
+    },
+    "rank": {
+        "title": "순위표",
+        "rank": "순위",
+        "player": "플레이어",
+        "tier": "등급",
+        "wl": "승/패",
+        "streak": "연승",
+        "no_data": "데이터가 없습니다",
+        "loading": "로딩 중..."
     }
 }

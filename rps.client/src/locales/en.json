@@ -59,5 +59,71 @@
         "full": "Room is full",
         "next_round": "Next round starting soon...",
         "back_to_lobby": "Back to Lobby"
+    },
+    "home": {
+        "welcome": "Welcome, {{name}}!",
+        "ready_message": "Ready to dominate the arena?",
+        "ranked_wins": "Ranked Wins",
+        "current_elo": "Current ELO",
+        "battle_now": "BATTLE NOW"
+    },
+    "battle": {
+        "energy": "Energy",
+        "select_mode": "Select Mode",
+        "redirecting": "Redirecting...",
+        "mode_label": "Mode: {{mode}}"
+    },
+    "profile": {
+        "title": "Profile",
+        "performance": "Performance",
+        "inventory": "Inventory",
+        "empty_inventory": "Your inventory is empty.",
+        "wins": "Wins",
+        "losses": "Losses",
+        "streak": "Streak",
+        "elo": "ELO",
+        "rank": "Rank",
+        "equip": "EQUIP",
+        "unequip": "UNEQUIP",
+        "equipped": "EQUIPPED"
+    },
+    "navigation": {
+        "home": "Home",
+        "shop": "Shop",
+        "battle": "Battle",
+        "rank": "Rank",
+        "profile": "Profile"
+    },
+    "shop": {
+        "title": "Item Shop",
+        "buy": "Buy",
+        "bought": "Owned",
+        "cost": "{{cost}} 💎",
+        "insufficient_funds": "Insufficient Funds",
+        "purchase_failed": "Purchase Failed",
+        "user_not_identified": "User not identified",
+        "hardcore_only": "Hardcore Only",
+        "daily_limit": "1/Day",
+        "success": "Purchase Successful!",
+        "items": {
+            "item_hint": {
+                "name": "Hint",
+                "description": "Reveals opponent's intended move for one round"
+            },
+            "item_shield": {
+                "name": "Rank Shield",
+                "description": "Automatically prevents streak reset on loss"
+            }
+        }
+    },
+    "rank": {
+        "title": "Leaderboard",
+        "rank": "Rank",
+        "player": "Player",
+        "tier": "Tier",
+        "wl": "W/L",
+        "streak": "Streak",
+        "no_data": "No data available",
+        "loading": "Loading..."
     }
 }

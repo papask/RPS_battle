@@ -5,8 +5,10 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import { Item } from '@/types';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function ShopPage() {
+    const { t } = useTranslation();
     const { user, updateUser } = useAuth();
     const router = useRouter();
     const [items, setItems] = useState<Item[]>([]);
@@ -31,7 +33,7 @@ export default function ShopPage() {
 
     const handleBuy = async (itemId: string) => {
         if (!user || !user._id) {
-            setError('User not identified');
+            setError(t('shop.user_not_identified'));
             return;
         }
         setLoading(true);
@@ -46,7 +48,7 @@ export default function ShopPage() {
             const data = await res.json();
 
             if (data.error) {
-                setError(data.error);
+                setError(data.error); // Keep server error for now or map it
             } else {
                 // Success - update local state immediately from response
                 // (Socket event is also sent, but this ensures immediate UI feedback)
@@ -56,7 +58,7 @@ export default function ShopPage() {
                 });
             }
         } catch (e) {
-            setError('Purchase failed');
+            setError(t('shop.purchase_failed'));
         } finally {
             setLoading(false);
         }
@@ -69,7 +71,7 @@ export default function ShopPage() {
                 {/* Header */}
                 <div className="flex justify-between items-center bg-gray-900/50 p-4 rounded-2xl border border-gray-800 backdrop-blur-sm">
                     <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 uppercase tracking-widest">
-                        Item Shop
+                        {t('shop.title')}
                     </h1>
                     <div className="bg-gray-800 px-4 py-2 rounded-xl border border-yellow-500/30 text-yellow-500 font-mono font-bold flex items-center gap-2 shadow-inner">
                         <span className="text-lg">💎</span>
@@ -103,14 +105,18 @@ export default function ShopPage() {
                                         {item.id === 'item_hint' ? '🧩' : item.id === 'item_shield' ? '🛡️' : '📦'}
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-white group-hover:text-yellow-400 transition-colors">{item.name}</h3>
-                                        <p className="text-gray-400 text-xs">{item.description}</p>
+                                        <h3 className="text-lg font-bold text-white group-hover:text-yellow-400 transition-colors">
+                                            {t(`shop.items.${item.id}.name`, { defaultValue: item.name })}
+                                        </h3>
+                                        <p className="text-gray-400 text-xs">
+                                            {t(`shop.items.${item.id}.description`, { defaultValue: item.description })}
+                                        </p>
                                     </div>
                                 </div>
                                 {item.effectType === 'shield' && (
                                     <div className="inline-flex items-center gap-1 mt-2 text-[10px] bg-blue-500/10 text-blue-300 px-2 py-1 rounded-full border border-blue-500/20">
                                         <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
-                                        Hardcore Only • 1/Day
+                                        {t('shop.hardcore_only')} • {t('shop.daily_limit')}
                                     </div>
                                 )}
                             </div>
@@ -127,8 +133,8 @@ export default function ShopPage() {
                                     <span className="animate-spin">↻</span>
                                 ) : (
                                     <>
-                                        <span className="text-sm">BUY</span>
-                                        <span className="text-xs opacity-90">{item.cost} 💎</span>
+                                        <span className="text-sm">{t('shop.buy')}</span>
+                                        <span className="text-xs opacity-90">{t('shop.cost', { cost: item.cost })}</span>
                                     </>
                                 )}
                             </button>

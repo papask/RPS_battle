@@ -1,28 +1,22 @@
-
 'use client';
 
 import { useSocket } from '@/components/providers/SocketProvider';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import Lobby from '@/components/lobby/Lobby';
-import { IPlayerState } from '@/types'; // Ensure IUser/IPlayerState is imported if needed
+import HomeView from '@/components/home/HomeView';
+import { IPlayerState } from '@/types';
 
 export default function Home() {
   const socket = useSocket();
   const router = useRouter();
-  const [me, setMe] = useState<IPlayerState | null>(null);
 
   useEffect(() => {
     if (!socket) return;
-
-    // Logic moved to AuthProvider
-    // Listening for room_joined is still useful for matchmaking/home redirect
 
     socket.on('room_joined', (room: any) => {
       console.log('Joined room:', room);
       router.push(`/room/${room.id}`);
     });
-
 
     socket.on('error', (message: string) => {
       alert(`Error: ${message}`);
@@ -34,11 +28,9 @@ export default function Home() {
     };
   }, [socket, router]);
 
-
-
   return (
     <main className="w-full">
-      <Lobby />
+      <HomeView />
     </main>
   );
 }
