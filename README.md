@@ -1,8 +1,132 @@
 # ⚔️ RPS Battle (가위바위보 배틀)
 
+**A high-quality Rock-Paper-Scissors duel game built on mind games and dopamine.**
 **심리전과 도파민을 자극하는 고품격 가위바위보 대결 게임.**
 
 ![RPS Battle Banner](rps.client/public/file.svg)
+
+**English** | [한국어](#-개요)
+
+---
+
+## 📌 Overview
+
+**RPS Battle** reimagines the classic Rock-Paper-Scissors game as a modern real-time multiplayer experience. It goes beyond a simple game of luck by adding competitive elements and rich visual feedback to keep players engaged.
+
+*   **Best of 3**: The first player to win 2 rounds takes the match.
+*   **Heart System**: A stamina system where hearts are deducted on defeat and regenerate over time.
+*   **Ranking**: An ELO-based skill rating system (planned).
+*   **i18n**: Full support for English and Korean.
+
+## 🛠 Tech Stack
+
+### Frontend (`rps.client`)
+*   **Framework**: [Next.js 14+](https://nextjs.org/) (App Router)
+*   **Language**: TypeScript
+*   **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+*   **State / Communication**: React Context + Socket.io Client
+*   **Localization**: `react-i18next`
+
+### Backend (`rps.server`)
+*   **Runtime**: Node.js
+*   **Framework**: Express.js
+*   **Realtime**: [Socket.io](https://socket.io/)
+*   **Database**: MongoDB (Mongoose)
+
+## ✨ Features
+
+*   **Real-time Multiplayer**: Fast matchmaking and lag-free gameplay.
+*   **Matchmaking**:
+    *   **Normal**: A casual mode to play for fun.
+    *   **Rank**: A competitive mode where ELO points are on the line.
+*   **Solid Game Loop**:
+    *   Timer-based round progression.
+    *   Automatic win by forfeit on disconnect.
+    *   Draw handling (rematch until a winner is decided).
+*   **Player Progression**:
+    *   **Hearts**: Hold up to 5, -1 on defeat, +1 auto-refill every 10 minutes.
+    *   **Records**: Win/loss history is saved.
+*   **Localization**:
+    *   Hand order changes by locale (e.g. Korean uses Scissors -> Rock -> Paper).
+    *   All UI text is translated.
+
+## 🚀 Getting Started
+
+### Requirements
+*   Node.js (v18 or later)
+*   npm or yarn
+*   A MongoDB instance (local or Atlas) - *Optional if you only want to test the UI, but required for login and saving records.*
+
+### Installation
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/papask/RPS_battle.git
+    cd RPS_battle
+    ```
+
+2.  **Install packages (from the root):**
+    ```bash
+    npm install
+    ```
+    *(Note: if workspaces are not configured, you may need to install in each folder separately)*
+
+    ```bash
+    cd rps.server && npm install
+    cd ../rps.client && npm install
+    ```
+
+## 🏃‍♂️ Running the Project
+
+You need to run both the **backend** and the **frontend** servers.
+
+### 1. Run the backend server
+```bash
+cd rps.server
+npm run dev
+# The server runs at http://localhost:3001
+```
+
+### 2. Run the frontend client
+```bash
+cd rps.client
+npm run dev
+# The client runs at http://localhost:3000
+```
+
+## 🧪 How to Test
+
+1.  Open [http://localhost:3000](http://localhost:3000) in **two browser tabs**.
+2.  Enter a nickname in each tab.
+3.  Click the **"Find Match"** button in both tabs.
+4.  The system matches you automatically and the game begins!
+
+## 📂 Project Structure
+
+```
+RPS_battle/
+├── rps.client/         # Next.js frontend
+│   ├── src/app/        # App Router pages
+│   ├── src/components/ # UI components
+│   └── src/locales/    # i18n JSON files
+├── rps.server/         # Express backend
+│   ├── src/managers/   # Game logic (rooms, matchmaking)
+│   ├── src/models/     # Mongoose models
+│   └── src/index.ts    # Entry point
+└── README.md           # This file
+```
+
+## 🗺 Roadmap
+
+- [x] MVP (core game loop, socket communication)
+- [x] Phase 2: Game engine (best of 3, hearts, records)
+- [ ] **Phase 3: Data & Ranking** (ELO system, hardcore win streaks)
+- [ ] **Phase 4: Polishing** (animations, sound)
+- [ ] **Phase 5: Launch** (social login, deployment)
+
+---
+
+[English](#-overview) | **한국어**
 
 ## 📌 개요
 

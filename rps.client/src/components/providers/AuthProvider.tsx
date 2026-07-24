@@ -10,6 +10,7 @@ interface AuthContextType {
     isLoading: boolean;
     loginWithToken: (token: string) => void;
     logout: () => void;
+    updateUser: (updates: Partial<IPlayerState>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -98,8 +99,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         router.push('/');
     };
 
+    const updateUser = (updates: Partial<IPlayerState>) => {
+        if (user) {
+            setUser({ ...user, ...updates });
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isLoading, loginWithToken, logout }}>
+        <AuthContext.Provider value={{ user, isLoading, loginWithToken, logout, updateUser }}>
             {children}
         </AuthContext.Provider>
     );

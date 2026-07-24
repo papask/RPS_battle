@@ -15,7 +15,36 @@ import User from './models/User';
 dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+// Connect to MongoDB
+connectDB().then(async () => {
+    // Seed Items
+    try {
+        const Item = require('./models/Item').default;
+        const count = await Item.countDocuments();
+        if (count === 0) {
+            console.log('Seeding initial items...');
+            await Item.create([
+                {
+                    id: 'item_hint',
+                    name: 'Hint Check',
+                    description: 'Reveals opponent\'s last 10 moves.',
+                    cost: 50,
+                    effectType: 'hint'
+                },
+                {
+                    id: 'item_shield',
+                    name: 'Streak Shield',
+                    description: 'Prevents streak reset on loss (Hardcore only). 1 use per day.',
+                    cost: 100,
+                    effectType: 'shield'
+                }
+            ]);
+            console.log('Items seeded.');
+        }
+    } catch (e) {
+        console.error('Error seeding items:', e);
+    }
+});
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -35,6 +64,20 @@ const roomManager = new RoomManager();
 const gameManager = new GameManager(io, roomManager);
 const matchmakingManager = new MatchmakingManager(roomManager, io);
 
+// Middleware to expose managers to routes
+app.use((req: any, res, next) => {
+    req.io = io;
+    req.roomManager = roomManager;
+    next();
+});
+
+// Routes
+import shopRoutes from './routes/shop';
+import inventoryRoutes from './routes/inventory';
+
+app.use('/api/shop', shopRoutes);
+app.use('/api/inventory', inventoryRoutes);
+
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
@@ -44,7 +87,24 @@ io.on('connection', (socket) => {
         nickname: `User-${socket.id.substr(0, 4)}`, // Default nickname
         hearts: 5,
         tokens: 0,
-        stats: { wins: 0, losses: 0 }
+        stats: {
+            normal: { wins: 0, losses: 0 },
+            rank: {
+                elo: 1000,
+                tier: 'Bronze',
+                division: 4,
+                wins: 0,
+                losses: 0,
+                currentStreak: 0
+            },
+            hardcore: {
+                currentStreak: 0,
+                bestStreak: 0,
+                seasonBestStreak: 0,
+                wins: 0,
+                losses: 0
+            }
+        }
     });
 
     socket.on('set_nickname', async (nickname: string) => {
@@ -88,7 +148,30 @@ io.on('connection', (socket) => {
                 user._id = dbUser._id.toString();
                 user.hearts = dbUser.assets.hearts;
                 user.tokens = dbUser.assets.tokens;
-                user.stats = dbUser.stats;
+                user.stats = {
+                    normal: {
+                        wins: dbUser.stats.normal.wins,
+                        losses: dbUser.stats.normal.losses
+                    },
+                    rank: {
+                        elo: dbUser.stats.rank.elo,
+                        tier: dbUser.stats.rank.tier,
+                        division: dbUser.stats.rank.division,
+                        serverRank: dbUser.stats.rank.serverRank,
+                        wins: dbUser.stats.rank.wins,
+                        losses: dbUser.stats.rank.losses,
+                        currentStreak: dbUser.stats.rank.currentStreak
+                    },
+                    hardcore: {
+                        currentStreak: dbUser.stats.hardcore.currentStreak,
+                        bestStreak: dbUser.stats.hardcore.bestStreak,
+                        seasonBestStreak: dbUser.stats.hardcore.seasonBestStreak,
+                        wins: dbUser.stats.hardcore.wins,
+                        losses: dbUser.stats.hardcore.losses
+                    }
+                };
+                user.behavior = dbUser.behavior;
+                user.inventory = dbUser.inventory;
 
                 if (user.hearts < 5) {
                     const lastUpdate = new Date(dbUser.assets.lastHeartUpdate).getTime();
@@ -139,7 +222,30 @@ io.on('connection', (socket) => {
                         user._id = dbUser._id.toString();
                         user.hearts = dbUser.assets.hearts;
                         user.tokens = dbUser.assets.tokens;
-                        user.stats = dbUser.stats;
+                        user.stats = {
+                            normal: {
+                                wins: dbUser.stats.normal.wins,
+                                losses: dbUser.stats.normal.losses
+                            },
+                            rank: {
+                                elo: dbUser.stats.rank.elo,
+                                tier: dbUser.stats.rank.tier,
+                                division: dbUser.stats.rank.division,
+                                serverRank: dbUser.stats.rank.serverRank,
+                                wins: dbUser.stats.rank.wins,
+                                losses: dbUser.stats.rank.losses,
+                                currentStreak: dbUser.stats.rank.currentStreak
+                            },
+                            hardcore: {
+                                currentStreak: dbUser.stats.hardcore.currentStreak,
+                                bestStreak: dbUser.stats.hardcore.bestStreak,
+                                seasonBestStreak: dbUser.stats.hardcore.seasonBestStreak,
+                                wins: dbUser.stats.hardcore.wins,
+                                losses: dbUser.stats.hardcore.losses
+                            }
+                        };
+                        user.behavior = dbUser.behavior;
+                        user.inventory = dbUser.inventory;
 
                         if (user.hearts < 5) {
                             const lastUpdate = new Date(dbUser.assets.lastHeartUpdate).getTime();
@@ -227,11 +333,11 @@ io.on('connection', (socket) => {
     });
 
     // GAME EVENTS
-    socket.on('start_game', (roomId: string) => {
+    socket.on('start_game', async (roomId: string) => {
         try {
             const room = roomManager.getRooms().find(r => r.id === roomId);
             if (room && room.players.length === 2) {
-                gameManager.startGame(room);
+                await gameManager.startGame(room);
                 io.to(roomId).emit('room_updated', room);
             }
         } catch (e: any) {
@@ -239,17 +345,17 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('make_move', ({ roomId, move }: { roomId: string, move: any }) => {
+    socket.on('make_move', async ({ roomId, move }: { roomId: string, move: any }) => {
         try {
             const room = roomManager.getRooms().find(r => r.id === roomId);
             if (room) {
-                const roundFinished = gameManager.handleMove(room, socket.id, move);
+                const roundFinished = await gameManager.handleMove(room, socket.id, move);
                 io.to(roomId).emit('room_updated', room);
 
                 if (roundFinished) {
                     // Determine if game is over or next round
                     if (room.gameState === 'GAME_OVER') {
-                        // Game Over
+                        // Game Over handled in resolveRound with emissions
                     } else {
                         // Auto-start next round after delay
                         setTimeout(() => {
@@ -264,11 +370,22 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('reset_game', (roomId: string) => {
+    socket.on('reset_game', async (roomId: string) => {
         const room = roomManager.getRooms().find(r => r.id === roomId);
         if (room) {
-            gameManager.startGame(room);
+            await gameManager.startGame(room);
             io.to(roomId).emit('room_updated', room);
+        }
+    });
+
+    socket.on('use_item', ({ roomId, itemId }: { roomId: string, itemId: string }) => {
+        try {
+            const room = roomManager.getRooms().find(r => r.id === roomId);
+            if (room) {
+                gameManager.useItem(room, socket.id, itemId);
+            }
+        } catch (e: any) {
+            socket.emit('error', e.message);
         }
     });
 
@@ -318,6 +435,85 @@ io.on('connection', (socket) => {
 
         } catch (e) {
             console.error('Check Hearts Error:', e);
+        }
+    });
+
+    // Item Equipping
+    socket.on('equip_item', async (itemId: string) => {
+        try {
+            const user = roomManager.getUser(socket.id);
+            if (!user || (!user._id && !user.id)) return;
+            // Need DB access
+            const User = require('./models/User').default;
+            // Use _id if available, but socket user might only have memory state?
+            // RoomManager user has _id if logged in/created.
+            const dbId = user._id;
+            if (!dbId) return socket.emit('error', 'User not authenticated');
+
+            const dbUser = await User.findById(dbId);
+            if (!dbUser) return;
+
+            // Check if owns item
+            const hasItem = dbUser.inventory.some((i: any) => i.itemId === itemId && i.count > 0);
+            if (!hasItem) {
+                return socket.emit('error', 'You do not own this item');
+            }
+
+            // Init array if missing
+            if (!dbUser.profile.equippedItems) dbUser.profile.equippedItems = [];
+
+            // Check if already equipped
+            if (dbUser.profile.equippedItems.includes(itemId)) {
+                return; // Already equipped
+            }
+
+            // Logic: Limit 1 item of each "type"?
+            // We only have 'item_hint' and 'item_shield'. They are different types.
+            // Let's just allow equipping both. 
+            // BUT prevent equipping multiple of SAME type if we had them (e.g. 2 different shields). 
+            // Current items have unique IDs for types effectively. 
+            // So just push.
+
+            dbUser.profile.equippedItems.push(itemId);
+            await dbUser.save();
+
+            // Update memory
+            user.equippedItems = dbUser.profile.equippedItems;
+
+            // Notify
+            socket.emit('user_updated', user);
+            socket.emit('equip_success', { itemId, equipped: true });
+
+        } catch (e: any) {
+            console.error('Equip Error:', e);
+            socket.emit('error', 'Failed to equip item');
+        }
+    });
+
+    socket.on('unequip_item', async (itemId: string) => {
+        try {
+            const user = roomManager.getUser(socket.id);
+            if (!user || !user._id) return;
+
+            const User = require('./models/User').default;
+            const dbUser = await User.findById(user._id);
+            if (!dbUser) return;
+
+            if (!dbUser.profile.equippedItems) return;
+
+            dbUser.profile.equippedItems = dbUser.profile.equippedItems.filter((id: string) => id !== itemId);
+            await dbUser.save();
+
+            // Update memory
+            user.equippedItems = dbUser.profile.equippedItems;
+
+            // Notify
+            socket.emit('user_updated', user);
+            socket.emit('equip_success', { itemId, equipped: false });
+
+        } catch (e: any) {
+            console.error('Unequip Error:', e);
+            socket.emit('error', 'Failed to unequip item');
         }
     });
 
@@ -414,6 +610,24 @@ app.get('/api/recover-hearts/:userId', async (req: any, res: any) => {
 
         return res.json({ hearts: 5, message: 'Hearts are full' });
 
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+
+// Leaderboard Endpoint
+app.get('/api/leaderboard', async (req: any, res: any) => {
+    try {
+        const User = require('./models/User').default;
+
+        // Top 50 by ELO
+        const leaderboard = await User.find({})
+            .sort({ 'stats.rank.elo': -1 })
+            .limit(50)
+            .select('profile.nickname stats.rank.elo stats.rank.tier stats.rank.division stats.rank.wins stats.rank.losses stats.hardcore.bestStreak');
+
+        res.json(leaderboard);
     } catch (e: any) {
         res.status(500).json({ error: e.message });
     }

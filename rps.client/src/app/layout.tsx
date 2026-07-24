@@ -5,6 +5,7 @@ import { SocketProvider } from "@/components/providers/SocketProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import I18nProvider from "@/components/providers/I18nProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import AppShell from "@/components/layout/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +22,14 @@ export const metadata: Metadata = {
   description: "Real-time Rock-Paper-Scissors Game",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#030712", // gray-950
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,10 +43,10 @@ export default function RootLayout({
         <I18nProvider>
           <SocketProvider>
             <AuthProvider>
-              <div className="fixed top-4 right-4 z-50">
-                <LanguageSwitcher />
-              </div>
-              {children}
+
+              <AppShell>
+                {children}
+              </AppShell>
             </AuthProvider>
           </SocketProvider>
         </I18nProvider>
