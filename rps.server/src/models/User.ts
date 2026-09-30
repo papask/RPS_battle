@@ -5,7 +5,8 @@ export interface IUserDocument extends Document {
         provider: 'temp' | 'google' | 'kakao';
         socialId: string;
         email?: string;
-        privateToken?: string;
+        tokenHash?: string;
+        privateToken?: string; // legacy plaintext token, migrated to tokenHash on first use
     };
     profile: {
         nickname: string;
@@ -63,6 +64,7 @@ const UserSchema: Schema = new Schema({
         provider: { type: String, required: true, enum: ['temp', 'google', 'kakao'], default: 'temp' },
         socialId: { type: String, required: true, unique: true },
         email: { type: String },
+        tokenHash: { type: String, unique: true, sparse: true }, // sha256 of the session token; the token itself is never stored
         privateToken: { type: String, unique: true, sparse: true },
     },
     profile: {
@@ -113,5 +115,9 @@ const UserSchema: Schema = new Schema({
     },
     activeEffects: [{ type: String }] // e.g., ['shield']
 }, { timestamps: true });
+
+// Nicknames are unique ignoring case ("Bot" and "BOT" collide). Queries must pass the same collation.
+export const NICKNAME_COLLATION = { locale: 'en', strength: 2 };
+UserSchema.index({ 'profile.nickname': 1 }, { unique: true, collation: NICKNAME_COLLATION });
 
 export default mongoose.model<IUserDocument>('User', UserSchema);

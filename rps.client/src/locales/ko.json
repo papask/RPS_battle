@@ -6,17 +6,24 @@
         "logging_in": "로그인 중...",
         "welcome": "환영합니다!",
         "nickname_taken": "이미 사용 중인 닉네임이에요. 다른 닉네임을 입력해 주세요.",
-        "nickname_invalid": "닉네임은 1~20자로 입력해 주세요.",
+        "nickname_invalid": "닉네임은 2~12자의 한글, 영문, 숫자, _만 쓸 수 있어요.",
+        "nickname_rule": "2~12자 · 한글, 영문, 숫자, _",
+        "nickname_checking": "확인 중...",
+        "nickname_ok": "사용할 수 있는 닉네임이에요",
+        "nickname_reserved": "사용할 수 없는 닉네임이에요",
         "create_failed": "계정을 만들지 못했어요. 잠시 후 다시 시도해 주세요."
     },
     "common": {
         "notice": "알림",
-        "ok": "확인"
+        "ok": "확인",
+        "cancel": "취소"
     },
     "settings": {
         "title": "설정",
         "language": "언어",
         "logout": "로그아웃",
+        "logout_title": "정말 로그아웃할까요?",
+        "logout_warning": "게스트 계정은 로그아웃하면 다시 들어올 수 없어요. 전적과 재화가 모두 사라집니다.",
         "card_art": "카드 그림",
         "card_art_glove": "장갑",
         "card_art_object": "사물"

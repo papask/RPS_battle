@@ -11,6 +11,7 @@ import MessageModal from '@/components/ui/MessageModal';
 const ERROR_KEYS: Record<string, string> = {
   'Nickname already taken': 'login.nickname_taken',
   'Invalid nickname': 'login.nickname_invalid',
+  'Nickname not allowed': 'login.nickname_reserved',
   'Failed to create user': 'login.create_failed',
 };
 

@@ -2,7 +2,8 @@
 
 import { useAuth } from '../providers/AuthProvider';
 import { useSocket } from '../providers/SocketProvider';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import MessageModal from '../ui/MessageModal';
 import { motion } from 'framer-motion';
 
 import { useTranslation } from 'react-i18next';
@@ -18,6 +19,9 @@ export default function TopBar({ embedded = false, onSettingsOpenChange }: { emb
     const [recoveryTimeLeft, setRecoveryTimeLeft] = useState<string>('');
     const socket = useSocket();
     const cardArt = useCardArt();
+    const { logout } = useAuth();
+    const [confirmLogout, setConfirmLogout] = useState(false);
+    const closeLogout = useCallback(() => setConfirmLogout(false), []);
 
     useEffect(() => { onSettingsOpenChange?.(isSettingsOpen); }, [isSettingsOpen, onSettingsOpenChange]);
 
@@ -131,10 +135,7 @@ export default function TopBar({ embedded = false, onSettingsOpenChange }: { emb
                                 </span>
                             </button>
                             <button
-                                onClick={() => {
-                                    localStorage.removeItem('rps_token');
-                                    window.location.href = '/';
-                                }}
+                                onClick={() => { setIsSettingsOpen(false); setConfirmLogout(true); }}
                                 className="w-full text-left px-4 py-3 hover:bg-red-50 text-red-500 flex items-center gap-2 transition-colors border-t border-gray-100"
                             >
                                 <span className="font-bold">{t('settings.logout')}</span>
@@ -144,6 +145,15 @@ export default function TopBar({ embedded = false, onSettingsOpenChange }: { emb
                     )}
                 </div>
             </div>
+
+            {/* Guest accounts live only in this browser's token: logging out loses them for good */}
+            <MessageModal
+                message={confirmLogout ? t('settings.logout_warning') : null}
+                title={t('settings.logout_title')}
+                onClose={closeLogout}
+                onConfirm={logout}
+                confirmLabel={t('settings.logout')}
+            />
         </div>
     );
 }

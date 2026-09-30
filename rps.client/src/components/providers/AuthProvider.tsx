@@ -3,12 +3,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useSocket } from './SocketProvider';
 import { IPlayerState } from '@/types';
-import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
     user: IPlayerState | null;
     isLoading: boolean;
-    loginWithToken: (token: string) => void;
     logout: () => void;
     updateUser: (updates: Partial<IPlayerState>) => void;
 }
@@ -25,7 +23,6 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const socket = useSocket();
-    const router = useRouter();
     const [user, setUser] = useState<IPlayerState | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading by default
 
@@ -34,14 +31,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         console.log('[AuthProvider] Socket connected/changed');
 
-        const savedToken = localStorage.getItem('rps_token');
-        if (savedToken) {
-            console.log('[AuthProvider] Found token, attempting login...');
-            socket.emit('login_with_token', savedToken);
+        // The server authenticated us from the handshake token; ask for the result once our
+        // listeners are attached (and again after every reconnect, e.g. a server restart).
+        const syncUser = () => {
+            if (localStorage.getItem('rps_token')) socket.emit('sync_user');
+        };
+        if (localStorage.getItem('rps_token')) {
+            syncUser();
         } else {
             console.log('[AuthProvider] No token found, ready as guest.');
             setIsLoading(false);
         }
+        socket.on('connect', syncUser);
 
         const handleAuthSuccess = (data: { message: string }) => {
             console.log('[AuthProvider] Auth Success:', data.message);
@@ -80,23 +81,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             socket.off('auth_error', handleAuthError);
             socket.off('user_updated', handleUserUpdated);
             socket.off('auth_token', handleAuthToken);
+            socket.off('connect', syncUser);
         };
 
     }, [socket]);
 
-    const loginWithToken = (token: string) => {
-        if (socket) {
-            setIsLoading(true);
-            socket.emit('login_with_token', token);
-        }
-    };
-
+    // Full reload: the server authenticates per connection, so a fresh socket is a fresh guest session
     const logout = () => {
         localStorage.removeItem('rps_token');
         localStorage.removeItem('rps_nickname');
-        setUser(null);
-        setIsLoading(false);
-        router.push('/');
+        window.location.href = '/';
     };
 
     const updateUser = (updates: Partial<IPlayerState>) => {
@@ -106,7 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, loginWithToken, logout, updateUser }}>
+        <AuthContext.Provider value={{ user, isLoading, logout, updateUser }}>
             {children}
         </AuthContext.Provider>
     );

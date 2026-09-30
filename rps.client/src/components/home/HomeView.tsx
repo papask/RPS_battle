@@ -2,10 +2,20 @@
 
 import { useAuth } from '../providers/AuthProvider';
 import { useSocket } from '../providers/SocketProvider';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
+import { NICKNAME_RE, normalizeNickname, NicknameStatus } from '@/nickname';
+
+const HINT: Record<NicknameStatus, { key: string; color: string }> = {
+    idle: { key: 'login.nickname_rule', color: 'text-gray-400' },
+    checking: { key: 'login.nickname_checking', color: 'text-gray-400' },
+    ok: { key: 'login.nickname_ok', color: 'text-green-600' },
+    invalid: { key: 'login.nickname_rule', color: 'text-red-500' },
+    reserved: { key: 'login.nickname_reserved', color: 'text-red-500' },
+    taken: { key: 'login.nickname_taken', color: 'text-red-500' },
+};
 
 export default function HomeView() {
     const { t } = useTranslation();
@@ -13,10 +23,26 @@ export default function HomeView() {
     const socket = useSocket();
     const router = useRouter();
     const [nickname, setNickname] = useState('');
+    const [status, setStatus] = useState<NicknameStatus>('idle');
+
+    // Format is checked instantly; availability is asked from the server once typing pauses
+    useEffect(() => {
+        const name = normalizeNickname(nickname);
+        if (!name) return setStatus('idle');
+        if (!NICKNAME_RE.test(name)) return setStatus('invalid');
+        setStatus('checking');
+        let stale = false;
+        const id = setTimeout(() => {
+            socket?.emit('check_nickname', name, ({ problem }: { problem: NicknameStatus | null }) => {
+                if (!stale) setStatus(problem ?? 'ok');
+            });
+        }, 350);
+        return () => { stale = true; clearTimeout(id); };
+    }, [nickname, socket]);
 
     const handleSetNickname = () => {
-        if (socket && nickname) {
-            socket.emit('set_nickname', nickname);
+        if (socket && status === 'ok') {
+            socket.emit('set_nickname', normalizeNickname(nickname));
         }
     };
 
@@ -40,18 +66,27 @@ export default function HomeView() {
                         {t('app_title')}
                     </motion.h1>
 
-                    <label className="block text-gray-500 mb-2 font-bold uppercase tracking-wider text-sm pl-1">{t('login.enter_nickname')}</label>
+                    <label htmlFor="nickname" className="block text-gray-500 mb-2 font-bold uppercase tracking-wider text-sm pl-1">{t('login.enter_nickname')}</label>
                     <div className="space-y-4">
-                        <input
-                            className="w-full bg-orange-50/50 p-4 rounded-xl text-gray-800 border-2 border-orange-100 focus:border-[#FF6B6B] outline-none transition-all text-lg placeholder-gray-400 font-bold"
-                            value={nickname}
-                            onChange={(e) => setNickname(e.target.value)}
-                            placeholder={t('login.enter_nickname')}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSetNickname()}
-                        />
+                        <div>
+                            <input
+                                id="nickname"
+                                className="w-full bg-orange-50/50 p-4 rounded-xl text-gray-800 border-2 border-orange-100 focus:border-[#FF6B6B] outline-none transition-all text-lg placeholder-gray-400 font-bold"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                placeholder={t('login.enter_nickname')}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSetNickname()}
+                                aria-invalid={status === 'invalid' || status === 'taken' || status === 'reserved'}
+                                aria-describedby="nickname-hint"
+                            />
+                            <p id="nickname-hint" aria-live="polite" className={`mt-2 pl-1 text-sm font-bold ${HINT[status].color}`}>
+                                {t(HINT[status].key)}
+                            </p>
+                        </div>
                         <button
                             onClick={handleSetNickname}
-                            className="btn-3d w-full bg-[#FF6B6B] hover:bg-[#ff5252] text-white py-4 rounded-xl font-black text-xl transition-all shadow-lg border-b-4 border-red-700 active:translate-y-1 active:border-b-0 active:shadow-none"
+                            disabled={status !== 'ok'}
+                            className="btn-3d w-full bg-[#FF6B6B] hover:bg-[#ff5252] text-white py-4 rounded-xl font-black text-xl transition-all shadow-lg border-b-4 border-red-700 active:translate-y-1 active:border-b-0 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0"
                         >
                             {t('login.play')}
                         </button>

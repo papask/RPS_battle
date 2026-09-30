@@ -6,17 +6,24 @@
         "logging_in": "Logging in...",
         "welcome": "Welcome back!",
         "nickname_taken": "That nickname is already taken. Please choose another one.",
-        "nickname_invalid": "Nicknames must be 1–20 characters.",
+        "nickname_invalid": "Nicknames are 2–12 characters: Korean, letters, digits or _.",
+        "nickname_rule": "2–12 chars · Korean, letters, digits, _",
+        "nickname_checking": "Checking...",
+        "nickname_ok": "Nickname is available",
+        "nickname_reserved": "That nickname can't be used",
         "create_failed": "Couldn't create your account. Please try again shortly."
     },
     "common": {
         "notice": "Notice",
-        "ok": "OK"
+        "ok": "OK",
+        "cancel": "Cancel"
     },
     "settings": {
         "title": "Settings",
         "language": "Language",
         "logout": "Logout",
+        "logout_title": "Log out?",
+        "logout_warning": "Guest accounts can't be recovered after logging out. Your record and tokens will be lost.",
         "card_art": "Card art",
         "card_art_glove": "Gloves",
         "card_art_object": "Objects"

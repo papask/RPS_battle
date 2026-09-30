@@ -11,6 +11,7 @@ import { IUser, GameMode } from './types';
 
 import { connectDB } from './db';
 import { emitRoom, viewFor } from './roomView';
+import { findUserByToken, hashToken, newToken, nicknameProblem, normalizeNickname } from './auth';
 import User from './models/User';
 
 dotenv.config();
@@ -79,191 +80,137 @@ import inventoryRoutes from './routes/inventory';
 app.use('/api/shop', shopRoutes);
 app.use('/api/inventory', inventoryRoutes);
 
+// Copies the persisted profile/assets/stats onto the in-memory (socket) user.
+const applyDbUser = (user: IUser, dbUser: any) => {
+    user.nickname = dbUser.profile.nickname;
+    user._id = dbUser._id.toString();
+    user.hearts = dbUser.assets.hearts;
+    user.tokens = dbUser.assets.tokens;
+    user.stats = {
+        normal: {
+            wins: dbUser.stats.normal.wins,
+            losses: dbUser.stats.normal.losses
+        },
+        rank: {
+            elo: dbUser.stats.rank.elo,
+            tier: dbUser.stats.rank.tier,
+            division: dbUser.stats.rank.division,
+            serverRank: dbUser.stats.rank.serverRank,
+            wins: dbUser.stats.rank.wins,
+            losses: dbUser.stats.rank.losses,
+            currentStreak: dbUser.stats.rank.currentStreak
+        },
+        hardcore: {
+            currentStreak: dbUser.stats.hardcore.currentStreak,
+            bestStreak: dbUser.stats.hardcore.bestStreak,
+            seasonBestStreak: dbUser.stats.hardcore.seasonBestStreak,
+            wins: dbUser.stats.hardcore.wins,
+            losses: dbUser.stats.hardcore.losses
+        }
+    };
+    user.behavior = dbUser.behavior;
+    user.inventory = dbUser.inventory;
+
+    if (user.hearts < 5) {
+        const lastUpdate = new Date(dbUser.assets.lastHeartUpdate).getTime();
+        user.nextHeartAt = lastUpdate + (10 * 60 * 1000);
+    } else {
+        delete user.nextHeartAt;
+    }
+};
+
+// Authenticate during the handshake (client sends { auth: { token } }), so the socket is already
+// logged in before any of its events are handled. A bad token doesn't block the connection:
+// the client plays on as a guest and is told to drop the token (see sync_user).
+io.use(async (socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (token) {
+        try {
+            socket.data.dbUser = await findUserByToken(token);
+        } catch (e) {
+            console.error('Handshake auth error:', e);
+        }
+        socket.data.authFailed = !socket.data.dbUser;
+    }
+    next();
+});
+
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
+    const dbUser = socket.data.dbUser;
 
-    // Initialize user
-    roomManager.addUser({
-        id: socket.id,
-        nickname: `User-${socket.id.substr(0, 4)}`, // Default nickname
-        hearts: 5,
-        tokens: 0,
-        stats: {
-            normal: { wins: 0, losses: 0 },
-            rank: {
-                elo: 1000,
-                tier: 'Bronze',
-                division: 4,
-                wins: 0,
-                losses: 0,
-                currentStreak: 0
-            },
-            hardcore: {
-                currentStreak: 0,
-                bestStreak: 0,
-                seasonBestStreak: 0,
-                wins: 0,
-                losses: 0
-            }
+    // Returning to a game this account dropped out of (grace period): take over its seat
+    const dropped = dbUser && roomManager.findUserByDbId(dbUser._id.toString());
+    if (dropped && dropped.isDisconnected) {
+        roomManager.reconnectUser(socket.id, dropped);
+        if (dropped.roomId) {
+            socket.join(dropped.roomId);
+            emitRoom(io, roomManager.getRooms().find(r => r.id === dropped.roomId));
+        }
+    } else {
+        // Initialize user (guest defaults; addUser fills hearts/tokens/stats)
+        const user = { id: socket.id, nickname: `User-${socket.id.substr(0, 4)}` } as IUser;
+        roomManager.addUser(user);
+        if (dbUser) applyDbUser(user, dbUser);
+    }
+
+    // Sent by the client once its listeners are attached: reports how the handshake went.
+    socket.on('sync_user', () => {
+        const user = roomManager.getUser(socket.id);
+        if (user?._id) {
+            socket.emit('user_updated', user);
+            socket.emit('auth_success', { message: 'Logged in' });
+        } else if (socket.data.authFailed) {
+            socket.emit('auth_error', 'Invalid token');
         }
     });
 
-    socket.on('set_nickname', async (nickname: string) => {
+    // Live availability check while typing: ack({ problem: null | 'invalid' | 'reserved' | 'taken' })
+    socket.on('check_nickname', async (raw: unknown, ack: unknown) => {
+        if (typeof ack !== 'function') return;
         try {
-            const User = require('./models/User').default;
-            const { v4: uuidv4 } = require('uuid');
+            ack({ problem: await nicknameProblem(normalizeNickname(raw)) });
+        } catch {
+            ack({ problem: null }); // the create step re-checks anyway
+        }
+    });
 
-            // Generate a fresh token for this new session
-            const newToken = uuidv4();
+    socket.on('set_nickname', async (raw: unknown) => {
+        try {
+            const nickname = normalizeNickname(raw);
+            const problem = await nicknameProblem(nickname);
+            // Existing accounts are only reachable via their token, otherwise anyone typing a
+            // nickname would take over that account.
+            if (problem === 'invalid') return socket.emit('error', 'Invalid nickname');
+            if (problem === 'reserved') return socket.emit('error', 'Nickname not allowed');
+            if (problem === 'taken') return socket.emit('error', 'Nickname already taken');
 
-            if (typeof nickname !== 'string' || !nickname.trim() || nickname.length > 20) {
-                return socket.emit('error', 'Invalid nickname');
+            const token = newToken();
+            let dbUser;
+            try {
+                dbUser = await User.create({
+                    auth: {
+                        provider: 'temp',
+                        socialId: `temp_${socket.id}_${Date.now()}`,
+                        tokenHash: hashToken(token)
+                    },
+                    profile: { nickname },
+                });
+            } catch (e: any) {
+                // Lost a race with someone taking the same nickname (unique index)
+                if (e?.code === 11000) return socket.emit('error', 'Nickname already taken');
+                throw e;
             }
-            nickname = nickname.trim();
 
-            // Existing accounts are only reachable via their token (login_with_token),
-            // otherwise anyone typing a nickname would take over that account.
-            if (await User.exists({ 'profile.nickname': nickname })) {
-                return socket.emit('error', 'Nickname already taken');
-            }
-
-            const dbUser = await User.create({
-                auth: {
-                    provider: 'temp',
-                    socialId: `temp_${socket.id}_${Date.now()}`,
-                    privateToken: newToken
-                },
-                profile: {
-                    nickname: nickname,
-                },
-            });
-
-
-            // Sync with RoomManager Memory
             const user = roomManager.getUser(socket.id);
             if (user) {
-                user.nickname = nickname;
-                user._id = dbUser._id.toString();
-                user.hearts = dbUser.assets.hearts;
-                user.tokens = dbUser.assets.tokens;
-                user.stats = {
-                    normal: {
-                        wins: dbUser.stats.normal.wins,
-                        losses: dbUser.stats.normal.losses
-                    },
-                    rank: {
-                        elo: dbUser.stats.rank.elo,
-                        tier: dbUser.stats.rank.tier,
-                        division: dbUser.stats.rank.division,
-                        serverRank: dbUser.stats.rank.serverRank,
-                        wins: dbUser.stats.rank.wins,
-                        losses: dbUser.stats.rank.losses,
-                        currentStreak: dbUser.stats.rank.currentStreak
-                    },
-                    hardcore: {
-                        currentStreak: dbUser.stats.hardcore.currentStreak,
-                        bestStreak: dbUser.stats.hardcore.bestStreak,
-                        seasonBestStreak: dbUser.stats.hardcore.seasonBestStreak,
-                        wins: dbUser.stats.hardcore.wins,
-                        losses: dbUser.stats.hardcore.losses
-                    }
-                };
-                user.behavior = dbUser.behavior;
-                user.inventory = dbUser.inventory;
-
-                if (user.hearts < 5) {
-                    const lastUpdate = new Date(dbUser.assets.lastHeartUpdate).getTime();
-                    user.nextHeartAt = lastUpdate + (10 * 60 * 1000);
-                } else {
-                    delete user.nextHeartAt;
-                }
-
-                // Send user data + token back to client
+                applyDbUser(user, dbUser);
                 socket.emit('user_updated', user);
-                socket.emit('auth_token', newToken); // Send the secret token!
+                socket.emit('auth_token', token); // the only time the raw token leaves the server
             }
         } catch (e) {
             console.error('DB Error:', e);
             socket.emit('error', 'Failed to create user');
-        }
-    });
-
-    socket.on('login_with_token', async (token: string) => {
-        try {
-            // Reject objects like { $ne: null } that would match any user
-            if (typeof token !== 'string' || !token) return socket.emit('auth_error', 'Invalid token');
-            const User = require('./models/User').default;
-            const dbUser = await User.findOne({ 'auth.privateToken': token });
-
-            if (dbUser) {
-                // Check if this user is a "disconnected" user in RoomManager
-                let user = roomManager.findUserByDbId(dbUser._id.toString());
-
-                if (user && user.isDisconnected) {
-                    // Handle Reconnection
-                    roomManager.reconnectUser(socket.id, user);
-                    socket.join(user.roomId!);
-
-                    // Notify client of successful reconnect
-                    socket.emit('auth_success', { message: 'Reconnected to game' });
-                    socket.emit('user_updated', user);
-
-                    // Get Room State
-                    const room = roomManager.getRooms().find(r => r.id === user!.roomId);
-                    if (room) {
-                        socket.emit('room_joined', viewFor(room, socket.id)); // Re-send room data
-                        emitRoom(io, room);
-                    }
-                } else {
-                    // Normal Login (New Session)
-                    user = roomManager.getUser(socket.id);
-                    if (user) {
-                        user.nickname = dbUser.profile.nickname;
-                        user._id = dbUser._id.toString();
-                        user.hearts = dbUser.assets.hearts;
-                        user.tokens = dbUser.assets.tokens;
-                        user.stats = {
-                            normal: {
-                                wins: dbUser.stats.normal.wins,
-                                losses: dbUser.stats.normal.losses
-                            },
-                            rank: {
-                                elo: dbUser.stats.rank.elo,
-                                tier: dbUser.stats.rank.tier,
-                                division: dbUser.stats.rank.division,
-                                serverRank: dbUser.stats.rank.serverRank,
-                                wins: dbUser.stats.rank.wins,
-                                losses: dbUser.stats.rank.losses,
-                                currentStreak: dbUser.stats.rank.currentStreak
-                            },
-                            hardcore: {
-                                currentStreak: dbUser.stats.hardcore.currentStreak,
-                                bestStreak: dbUser.stats.hardcore.bestStreak,
-                                seasonBestStreak: dbUser.stats.hardcore.seasonBestStreak,
-                                wins: dbUser.stats.hardcore.wins,
-                                losses: dbUser.stats.hardcore.losses
-                            }
-                        };
-                        user.behavior = dbUser.behavior;
-                        user.inventory = dbUser.inventory;
-
-                        if (user.hearts < 5) {
-                            const lastUpdate = new Date(dbUser.assets.lastHeartUpdate).getTime();
-                            user.nextHeartAt = lastUpdate + (10 * 60 * 1000);
-                        } else {
-                            delete user.nextHeartAt;
-                        }
-
-                        socket.emit('user_updated', user);
-                        socket.emit('auth_success', { message: 'Logged in via token' });
-                    }
-                }
-            } else {
-                socket.emit('auth_error', 'Invalid token');
-            }
-        } catch (e) {
-            console.error('Token Login Error:', e);
-            socket.emit('auth_error', 'Server error');
         }
     });
 
