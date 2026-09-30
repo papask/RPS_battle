@@ -1,7 +1,7 @@
 'use client';
 
 import { useSocket } from '@/components/providers/SocketProvider';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../providers/AuthProvider';
@@ -10,13 +10,15 @@ export default function BattleView() {
     const { t } = useTranslation();
     const socket = useSocket();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user: me, isLoading } = useAuth();
+    const queryMode = searchParams.get('mode');
 
     const [hearts, setHearts] = useState(5);
     const [recoveryTimeLeft, setRecoveryTimeLeft] = useState<string>('');
     const [isFindingMatch, setIsFindingMatch] = useState(false);
     const [foundMatch, setFoundMatch] = useState(false);
-    const [selectedMode, setSelectedMode] = useState<'normal' | 'rank' | 'hardcore'>('normal');
+    const [selectedMode, setSelectedMode] = useState<'classic' | 'normal' | 'rank' | 'hardcore'>('normal');
     const [isClient, setIsClient] = useState(false);
 
     // Sync hearts
@@ -51,14 +53,18 @@ export default function BattleView() {
         return () => clearInterval(interval);
     }, [me?.nextHeartAt, me?.hearts, socket]);
 
-    // Initialize state from local storage
+    // Initialize state from local storage or query param
     useEffect(() => {
         setIsClient(true);
-        const savedMode = localStorage.getItem('rps_last_mode');
-        if (savedMode && ['normal', 'rank', 'hardcore'].includes(savedMode)) {
-            setSelectedMode(savedMode as 'normal' | 'rank' | 'hardcore');
+        if (queryMode && ['classic', 'normal', 'rank', 'hardcore'].includes(queryMode)) {
+            setSelectedMode(queryMode as any);
+        } else {
+            const savedMode = localStorage.getItem('rps_last_mode');
+            if (savedMode && ['classic', 'normal', 'rank', 'hardcore'].includes(savedMode)) {
+                setSelectedMode(savedMode as any);
+            }
         }
-    }, []);
+    }, [queryMode]);
 
     // Redirect if no nickname
     useEffect(() => {
@@ -127,34 +133,31 @@ export default function BattleView() {
     }
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-6rem)] px-4 w-full max-w-md mx-auto space-y-8">
-
-            {/* Header / Hearts */}
-            <div className="w-full flex justify-between items-center bg-gray-900/50 p-4 rounded-xl border border-gray-800 backdrop-blur-sm">
-                <span className="text-gray-400 font-bold text-sm uppercase tracking-widest">{t('battle.energy')}</span>
-                <div className="flex items-center gap-2">
-                    <span className="text-red-500 text-xl">❤️</span>
-                    <span className="text-white font-black text-xl">{hearts}/5</span>
-                    {recoveryTimeLeft && (
-                        <span className="text-xs text-gray-500 font-mono">({recoveryTimeLeft})</span>
-                    )}
-                </div>
-            </div>
+        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-6rem)] px-4 w-full max-w-md mx-auto space-y-8 pt-36 pb-32">
 
             {/* Game Mode Selector */}
             <div className="w-full space-y-2">
-                <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">{t('battle.select_mode')}</h2>
-                <div className="flex bg-gray-900/80 p-1.5 rounded-xl border border-gray-800 backdrop-blur-sm">
-                    {['normal', 'rank', 'hardcore'].map((mode) => (
+                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-2">{t('battle.select_mode')}</h2>
+                <div className="flex flex-col gap-2">
+                    {['classic', 'normal', 'rank', 'hardcore'].map((mode) => (
                         <button
                             key={mode}
                             onClick={() => setSelectedMode(mode as any)}
-                            className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${selectedMode === mode
-                                ? 'bg-gradient-to-br from-purple-600 to-indigo-600 text-white shadow-lg'
-                                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                            className={`w-full py-4 px-6 rounded-2xl border-2 transition-all flex items-center justify-between group ${selectedMode === mode
+                                ? 'bg-white border-[#FF6B6B] shadow-lg scale-[1.02]'
+                                : 'bg-white/50 border-transparent hover:bg-white hover:border-[#FF6B6B]/30'
                                 }`}
                         >
-                            {t(`lobby.modes.${mode}`)}
+                            <span className={`text-lg font-bold uppercase tracking-wide ${selectedMode === mode ? 'text-[#FF6B6B]' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                                {t(`lobby.modes.${mode}`)}
+                            </span>
+
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedMode === mode
+                                ? 'border-[#FF6B6B] bg-[#FF6B6B]'
+                                : 'border-gray-200 bg-transparent'
+                                }`}>
+                                {selectedMode === mode && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                            </div>
                         </button>
                     ))}
                 </div>
@@ -163,22 +166,21 @@ export default function BattleView() {
             {/* Matchmaking Button */}
             <div className="w-full relative">
                 {foundMatch ? (
-                    <div className="bg-green-500/20 p-8 rounded-3xl border border-green-500/50 flex flex-col items-center animate-bounce relative overflow-hidden">
-                        <div className="absolute inset-0 bg-green-500/10 animate-[pulse_0.5s_infinite]" />
+                    <div className="bg-green-100 p-8 rounded-[2rem] border-4 border-green-200 flex flex-col items-center animate-bounce-soft relative overflow-hidden shadow-xl">
                         <div className="relative z-10 flex flex-col items-center">
-                            <div className="text-green-400 font-black text-2xl uppercase tracking-widest mb-1">{t('lobby.match_found')}</div>
-                            <div className="text-green-200/70 text-xs uppercase tracking-wider">{t('battle.redirecting')}</div>
+                            <div className="text-green-600 font-black text-2xl uppercase tracking-widest mb-1">{t('lobby.match_found')}</div>
+                            <div className="text-green-500 text-xs uppercase tracking-wider font-bold">{t('battle.redirecting')}</div>
                         </div>
                     </div>
                 ) : isFindingMatch ? (
-                    <div className="bg-gray-900/50 p-8 rounded-3xl border border-purple-500/30 flex flex-col items-center animate-pulse relative overflow-hidden">
-                        <div className="absolute inset-0 bg-purple-500/5 animate-[pulse_3s_infinite]" />
+                    <div className="bg-white p-8 rounded-[2rem] border-4 border-[#4ECDC4] flex flex-col items-center relative overflow-hidden shadow-xl">
+                        <div className="absolute inset-0 bg-[#4ECDC4]/10 animate-pulse" />
                         <div className="relative z-10 flex flex-col items-center w-full">
-                            <div className="text-purple-400 font-bold text-2xl mb-2">{t('lobby.searching')}</div>
-                            <div className="text-gray-500 text-xs mb-8 uppercase tracking-wider">{t('battle.mode_label', { mode: t(`lobby.modes.${selectedMode}`) })}</div>
+                            <div className="text-[#4ECDC4] font-black text-2xl mb-2">{t('lobby.searching')}</div>
+                            <div className="text-gray-400 text-xs mb-8 uppercase tracking-wider font-bold">{t('battle.mode_label', { mode: t(`lobby.modes.${selectedMode}`) })}</div>
                             <button
                                 onClick={handleCancelMatch}
-                                className="px-8 py-2 rounded-full border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 text-sm font-bold transition-colors"
+                                className="px-8 py-3 rounded-xl border-2 border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 text-sm font-bold transition-colors bg-white hover:shadow-sm"
                             >
                                 {t('lobby.cancel')}
                             </button>
@@ -188,24 +190,24 @@ export default function BattleView() {
                     <button
                         onClick={handleQuickMatch}
                         disabled={hearts <= 0}
-                        className={`w-full py-8 rounded-3xl font-black text-3xl uppercase tracking-widest shadow-2xl transition-all transform active:scale-95 relative overflow-hidden group ${hearts > 0
-                            ? 'bg-white text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-200'
-                            : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                        className={`btn-3d w-full py-6 rounded-[2rem] font-black text-3xl uppercase tracking-widest shadow-xl transition-transform active:translate-y-1 relative overflow-hidden group ${hearts > 0
+                            ? 'bg-[#FF6B6B] text-white border-b-4 border-red-700'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed border-b-4 border-gray-300'
                             }`}
                     >
-                        {hearts > 0 && (
-                            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 bg-[length:200%_auto] animate-[gradient_3s_linear_infinite]" />
-                        )}
-                        <span className={`relative z-10 ${hearts > 0 ? 'text-white drop-shadow-md' : ''}`}>
+                        <span className={`relative z-10 flex items-center justify-center gap-3 ${hearts > 0 ? 'drop-shadow-sm' : ''}`}>
                             {t('lobby.find_match')}
                         </span>
                     </button>
                 )}
             </div>
 
-            <p className="text-xs text-gray-500 text-center max-w-xs">
-                Select your mode and click the button above to start searching for an opponent.
-            </p>
+            <div className="bg-white/60 p-4 rounded-xl text-center backdrop-blur-sm">
+                <p className="text-xs text-gray-500 font-medium">
+                    {t('battle.instruction')}
+                </p>
+            </div>
+
         </div>
     );
 }

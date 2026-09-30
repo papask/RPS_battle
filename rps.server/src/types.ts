@@ -1,11 +1,12 @@
 
-export type GameMode = 'normal' | 'rank' | 'hardcore';
+export type GameMode = 'classic' | 'normal' | 'rank' | 'hardcore';
 
 export interface IUser {
     id: string; // Socket ID
     nickname: string;
     roomId?: string;
     isDisconnected?: boolean;
+    isBot?: boolean;
     disconnectTimeout?: NodeJS.Timeout;
 
     // Database Fields (Synced)
@@ -59,6 +60,11 @@ export interface IPlayerState extends IUser {
         moves?: string[];
         data?: any;
     } | null;
+    deck?: {
+        rock: number;
+        paper: number;
+        scissors: number;
+    };
 }
 
 export interface IRoom {
@@ -70,4 +76,6 @@ export interface IRoom {
     currentRound: number;
     roundWinner: string | 'draw' | null;
     gameWinner: string | null;
+    isSuddenDeath?: boolean;
+    roundDeadline?: number; // epoch ms when unplayed moves are auto-picked
 }

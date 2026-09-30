@@ -1,22 +1,26 @@
 import express from 'express';
-import User from '../models/User';
+import { requireAuth } from '../auth';
 
 const router = express.Router();
 
+router.get('/test', async (req: any, res: any) => {
+    res.json(
+        {
+            success: true
+        }
+    );
+});
+
 // Use Item
-router.post('/use', async (req: any, res: any) => {
+router.post('/use', requireAuth, async (req: any, res: any) => {
     try {
-        const { userId, itemId } = req.body;
+        const { itemId } = req.body;
 
-        if (!userId || !itemId) {
-            return res.status(400).json({ error: 'Missing userId or itemId' });
+        if (typeof itemId !== 'string') {
+            return res.status(400).json({ error: 'Missing itemId' });
         }
 
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+        const user = req.user;
 
         const inventoryItem = user.inventory.find((i: any) => i.itemId === itemId);
 

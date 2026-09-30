@@ -6,3 +6,4 @@ dist/
 Thumbs.db
 PROJECT_SPEC.md
 PROJECT_SPEC.md
+.playwright-mcp/

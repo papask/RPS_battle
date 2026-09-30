@@ -1,7 +1,7 @@
 
 export type GameStatus = 'WAITING' | 'PLAYING' | 'ROUND_RESULT' | 'GAME_OVER';
 export type Move = 'rock' | 'paper' | 'scissors' | null;
-export type GameMode = 'normal' | 'rank' | 'hardcore';
+export type GameMode = 'classic' | 'normal' | 'rank' | 'hardcore';
 
 export interface IPlayerState {
     id: string; // Socket ID
@@ -12,9 +12,15 @@ export interface IPlayerState {
     equippedItems?: string[];
     score: number;
     move: Move;
+    hasMoved?: boolean; // set on opponents while their pick is hidden
     isReady: boolean;
     hearts?: number;
     tokens?: number;
+    deck?: {
+        rock: number;
+        paper: number;
+        scissors: number;
+    };
     stats?: {
         normal: {
             wins: number;
@@ -69,6 +75,8 @@ export interface IRoom {
     currentRound: number;
     roundWinner: string | 'draw' | null;
     gameWinner: string | null;
+    isSuddenDeath?: boolean;
+    roundDeadline?: number; // server epoch ms; unplayed moves are auto-picked after it
 }
 
 export interface GameOverPayload {

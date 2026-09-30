@@ -84,19 +84,19 @@ You need to run both the **backend** and the **frontend** servers.
 ```bash
 cd rps.server
 npm run dev
-# The server runs at http://localhost:3001
+# The server runs at http://localhost:3701
 ```
 
 ### 2. Run the frontend client
 ```bash
 cd rps.client
 npm run dev
-# The client runs at http://localhost:3000
+# The client runs at http://localhost:3700
 ```
 
 ## 🧪 How to Test
 
-1.  Open [http://localhost:3000](http://localhost:3000) in **two browser tabs**.
+1.  Open [http://localhost:3700](http://localhost:3700) in **two browser tabs**.
 2.  Enter a nickname in each tab.
 3.  Click the **"Find Match"** button in both tabs.
 4.  The system matches you automatically and the game begins!
@@ -203,19 +203,19 @@ RPS_battle/
 ```bash
 cd rps.server
 npm run dev
-# 서버는 http://localhost:3001 에서 실행됩니다.
+# 서버는 http://localhost:3701 에서 실행됩니다.
 ```
 
 ### 2. 프론트엔드 클라이언트 실행
 ```bash
 cd rps.client
 npm run dev
-# 클라이언트는 http://localhost:3000 에서 실행됩니다.
+# 클라이언트는 http://localhost:3700 에서 실행됩니다.
 ```
 
 ## 🧪 테스트 방법
 
-1.  **두 개의 브라우저 탭**에서 [http://localhost:3000](http://localhost:3000)을 엽니다.
+1.  **두 개의 브라우저 탭**에서 [http://localhost:3700](http://localhost:3700)을 엽니다.
 2.  각 탭에서 닉네임을 입력합니다.
 3.  양쪽 탭에서 **"매칭 찾기 (Find Match)"** 버튼을 클릭합니다.
 4.  시스템이 자동으로 매칭을 성사시키고 게임이 시작됩니다!

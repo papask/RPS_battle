@@ -1,6 +1,6 @@
 import express from 'express';
-import User from '../models/User';
 import Item from '../models/Item';
+import { requireAuth } from '../auth';
 
 const router = express.Router();
 
@@ -15,15 +15,15 @@ router.get('/', async (req, res) => {
 });
 
 // Buy Item
-router.post('/buy', async (req: any, res: any) => {
+router.post('/buy', requireAuth, async (req: any, res: any) => {
     try {
-        const { userId, itemId } = req.body;
+        const { itemId } = req.body;
 
-        if (!userId || !itemId) {
-            return res.status(400).json({ error: 'Missing userId or itemId' });
+        if (typeof itemId !== 'string') {
+            return res.status(400).json({ error: 'Missing itemId' });
         }
 
-        const user = await User.findById(userId);
+        const user = req.user;
         const item = await Item.findOne({ id: itemId });
 
         if (!user || !item) {

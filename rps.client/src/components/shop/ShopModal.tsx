@@ -43,8 +43,11 @@ export default function ShopModal({ isOpen, onClose, user, onPurchase }: ShopMod
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/shop/buy`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user._id, itemId })
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('rps_token')}`
+                },
+                body: JSON.stringify({ itemId })
             });
             const data = await res.json();
 
