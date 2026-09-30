@@ -15,7 +15,7 @@ export interface IMatchHistoryDocument extends Document {
 }
 
 const MatchHistorySchema: Schema = new Schema({
-    matchType: { type: String, required: true, enum: ['NORMAL', 'RANK', 'HARDCORE'] },
+    matchType: { type: String, required: true, enum: ['NORMAL', 'RANK', 'HARDCORE', 'CLASSIC'] },
     participants: [{
         userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         nickname: { type: String, required: true }, // Snapshot of nickname at time of match

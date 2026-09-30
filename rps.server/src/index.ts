@@ -10,6 +10,7 @@ import { MatchmakingManager } from './managers/MatchmakingManager';
 import { IUser, GameMode } from './types';
 
 import { connectDB } from './db';
+import { emitRoom, viewFor } from './roomView';
 import User from './models/User';
 
 dotenv.config();
@@ -47,7 +48,7 @@ connectDB().then(async () => {
 });
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3701;
 
 app.use(cors());
 app.use(express.json());
@@ -112,33 +113,30 @@ io.on('connection', (socket) => {
             const User = require('./models/User').default;
             const { v4: uuidv4 } = require('uuid');
 
-            // Check if nickname is taken (simple check, though duplicate nicknames are allowed in current logic)
-            // For now, let's create a new user or update existing if we can find by nickname (but nickname isn't unique index)
-            // Sticking to "Create New" flow, but with token persistence for future logins
-
             // Generate a fresh token for this new session
             const newToken = uuidv4();
 
-            let dbUser = await User.findOne({ 'profile.nickname': nickname });
-
-            if (dbUser) {
-                // User exists: Update token for this new session
-                dbUser.auth.privateToken = newToken;
-                dbUser.auth.socialId = `temp_${socket.id}_${Date.now()}`;
-                await dbUser.save();
-            } else {
-                // Create New User
-                dbUser = await User.create({
-                    auth: {
-                        provider: 'temp',
-                        socialId: `temp_${socket.id}_${Date.now()}`,
-                        privateToken: newToken
-                    },
-                    profile: {
-                        nickname: nickname,
-                    },
-                });
+            if (typeof nickname !== 'string' || !nickname.trim() || nickname.length > 20) {
+                return socket.emit('error', 'Invalid nickname');
             }
+            nickname = nickname.trim();
+
+            // Existing accounts are only reachable via their token (login_with_token),
+            // otherwise anyone typing a nickname would take over that account.
+            if (await User.exists({ 'profile.nickname': nickname })) {
+                return socket.emit('error', 'Nickname already taken');
+            }
+
+            const dbUser = await User.create({
+                auth: {
+                    provider: 'temp',
+                    socialId: `temp_${socket.id}_${Date.now()}`,
+                    privateToken: newToken
+                },
+                profile: {
+                    nickname: nickname,
+                },
+            });
 
 
             // Sync with RoomManager Memory
@@ -192,6 +190,8 @@ io.on('connection', (socket) => {
 
     socket.on('login_with_token', async (token: string) => {
         try {
+            // Reject objects like { $ne: null } that would match any user
+            if (typeof token !== 'string' || !token) return socket.emit('auth_error', 'Invalid token');
             const User = require('./models/User').default;
             const dbUser = await User.findOne({ 'auth.privateToken': token });
 
@@ -211,8 +211,8 @@ io.on('connection', (socket) => {
                     // Get Room State
                     const room = roomManager.getRooms().find(r => r.id === user!.roomId);
                     if (room) {
-                        socket.emit('room_joined', room); // Re-send room data
-                        io.to(room.id).emit('room_updated', room);
+                        socket.emit('room_joined', viewFor(room, socket.id)); // Re-send room data
+                        emitRoom(io, room);
                     }
                 } else {
                     // Normal Login (New Session)
@@ -299,7 +299,7 @@ io.on('connection', (socket) => {
 
             roomManager.leaveRoom(socket.id);
             socket.leave(roomId);
-            io.to(roomId).emit('room_updated', room);
+            emitRoom(io, room);
         }
     });
 
@@ -310,8 +310,8 @@ io.on('connection', (socket) => {
             if (user) {
                 roomManager.joinRoom(roomId, user);
                 socket.join(roomId);
-                socket.emit('room_joined', room);
-                io.to(roomId).emit('room_updated', room);
+                socket.emit('room_joined', viewFor(room, socket.id));
+                emitRoom(io, room);
             }
         } catch (e: any) {
             socket.emit('error', e.message);
@@ -324,8 +324,8 @@ io.on('connection', (socket) => {
             if (user) {
                 const room = roomManager.joinRoom(roomId, user);
                 socket.join(roomId);
-                socket.emit('room_joined', room);
-                io.to(roomId).emit('room_updated', room);
+                socket.emit('room_joined', viewFor(room, socket.id));
+                emitRoom(io, room);
             }
         } catch (e: any) {
             socket.emit('error', e.message);
@@ -338,7 +338,7 @@ io.on('connection', (socket) => {
             const room = roomManager.getRooms().find(r => r.id === roomId);
             if (room && room.players.length === 2) {
                 await gameManager.startGame(room);
-                io.to(roomId).emit('room_updated', room);
+                emitRoom(io, room);
             }
         } catch (e: any) {
             socket.emit('error', e.message);
@@ -347,23 +347,10 @@ io.on('connection', (socket) => {
 
     socket.on('make_move', async ({ roomId, move }: { roomId: string, move: any }) => {
         try {
+            if (!['rock', 'paper', 'scissors'].includes(move)) return;
             const room = roomManager.getRooms().find(r => r.id === roomId);
             if (room) {
-                const roundFinished = await gameManager.handleMove(room, socket.id, move);
-                io.to(roomId).emit('room_updated', room);
-
-                if (roundFinished) {
-                    // Determine if game is over or next round
-                    if (room.gameState === 'GAME_OVER') {
-                        // Game Over handled in resolveRound with emissions
-                    } else {
-                        // Auto-start next round after delay
-                        setTimeout(() => {
-                            gameManager.resetRound(room);
-                            io.to(roomId).emit('room_updated', room);
-                        }, 3000); // 3 seconds delay for round result
-                    }
-                }
+                await gameManager.submitMove(room, socket.id, move);
             }
         } catch (e: any) {
             socket.emit('error', e.message);
@@ -374,7 +361,7 @@ io.on('connection', (socket) => {
         const room = roomManager.getRooms().find(r => r.id === roomId);
         if (room) {
             await gameManager.startGame(room);
-            io.to(roomId).emit('room_updated', room);
+            emitRoom(io, room);
         }
     });
 
@@ -539,7 +526,7 @@ io.on('connection', (socket) => {
                 }
                 const leftRoom = roomManager.leaveRoom(socket.id);
                 if (leftRoom) {
-                    io.to(leftRoom.id).emit('room_updated', leftRoom);
+                    emitRoom(io, leftRoom);
                 }
             }
             roomManager.removeUser(socket.id);
@@ -556,7 +543,7 @@ io.on('connection', (socket) => {
             // Standard removal (not in room or failed)
             const room = roomManager.leaveRoom(socket.id);
             if (room) {
-                io.to(room.id).emit('room_updated', room);
+                emitRoom(io, room);
             }
             roomManager.removeUser(socket.id);
         }

@@ -111,13 +111,13 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
     }
 
     return (
-        <main className="flex flex-col items-center px-4 pt-24 pb-24 font-sans w-full">
-            {/* Header */}
-            <div className="w-full flex justify-between items-center mb-8 p-3 bg-gray-900/50 backdrop-blur-md rounded-2xl border border-gray-800 shadow-xl">
+        <main className="flex flex-col items-center font-sans w-full h-screen pt-16 overflow-hidden relative">
+            {/* Header - Compact & Absolute/Overlay or standard compact */}
+            <div className="w-full max-w-md px-4 py-2 mt-2 flex justify-between items-center z-40 relative">
                 <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Room ID</span>
                     <div className="flex items-center gap-2">
-                        <span className="text-xl font-black text-white tracking-widest">{room.id}</span>
+                        <span className="text-xl font-black text-gray-800 tracking-widest">{room.id}</span>
                         <button
                             onClick={() => navigator.clipboard.writeText(room.id)}
                             className="bg-gray-800 hover:bg-gray-700 p-1.5 rounded-lg text-gray-400 hover:text-white transition-colors"
@@ -151,36 +151,10 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
             </div>
 
             {/* Game Area */}
-            <div className="flex flex-col items-center w-full">
-
-                {/* Score Board */}
-                <div className="flex justify-between w-full mb-12 px-6 items-center relative">
-                    {/* VS Background Text */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[100px] font-black text-gray-800/30 italic select-none pointer-events-none z-0">
-                        VS
-                    </div>
-
-                    {room.players.map((p, i) => {
-                        const isMe = p.id === me?.id;
-                        return (
-                            <div key={p.id || i} className={`relative z-10 flex flex-col items-center flex-1 ${isMe ? 'order-1' : 'order-3'}`}>
-                                <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl font-bold mb-3 shadow-2xl border-4 
-                                    ${isMe
-                                        ? 'bg-gradient-to-br from-blue-500 to-cyan-600 border-blue-400/50 shadow-blue-500/50'
-                                        : 'bg-gradient-to-br from-red-500 to-pink-600 border-red-400/50 shadow-red-500/50'}`}>
-                                    {p.nickname.charAt(0).toUpperCase()}
-                                </div>
-                                <div className={`text-sm font-bold mb-1 ${isMe ? 'text-blue-400' : 'text-red-400'}`}>
-                                    {p.nickname} {isMe && '(You)'}
-                                </div>
-                                <div className="text-4xl font-black text-white drop-shadow-lg">{p.score}</div>
-                            </div>
-                        );
-                    })}
-                </div>
+            <div className="flex flex-col items-center w-full flex-1 min-h-0">
 
                 {/* Main Interaction Area */}
-                <div className="w-full min-h-[300px] flex flex-col items-center justify-center">
+                <div className="w-full flex-1 min-h-[300px] flex flex-col items-center justify-center">
                     {room.gameState === 'WAITING' ? (
                         <div className="text-center w-full">
                             {room.players.length < 2 ? (

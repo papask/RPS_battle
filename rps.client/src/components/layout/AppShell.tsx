@@ -13,7 +13,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const isGameRoom = pathname?.startsWith('/room/');
 
     return (
-        <div className="w-full md:max-w-md mx-auto relative bg-gray-950 min-h-screen shadow-2xl md:border-x border-gray-800">
+        <div className="w-full md:max-w-md mx-auto relative bg-[#fff8e1] min-h-screen shadow-2xl md:border-x border-gray-200">
             {me && <TopBar />}
 
             {/* Main Content Area */}

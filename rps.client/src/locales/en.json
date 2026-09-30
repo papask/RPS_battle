@@ -16,6 +16,7 @@
         "current_streak": "Streak",
         "best_streak": "Best Streak",
         "modes": {
+            "classic": "Classic",
             "normal": "Normal",
             "rank": "Rank",
             "hardcore": "Hardcore"
@@ -34,6 +35,7 @@
     "game": {
         "copy": "COPY",
         "status": "Status",
+        "opponent": "Opponent",
         "leave": "Leave",
         "you": "(You)",
         "vs": "VS",
@@ -41,6 +43,7 @@
         "ready": "Both players ready!",
         "start_game": "START GAME",
         "round": "Round {{round}}",
+        "sudden_death": "SUDDEN DEATH",
         "moves": {
             "rock": "Rock",
             "paper": "Paper",
@@ -54,7 +57,12 @@
             "defeat": "DEFEAT",
             "opponent_disconnected": "Opponent Disconnected",
             "congrats": "Congratulations!",
-            "better_luck": "Better luck next time."
+            "better_luck": "Better luck next time.",
+            "good_game": "Good Game!",
+            "draw_title": "DRAW!"
+        },
+        "item_hint": {
+            "no_history": "No history available"
         },
         "full": "Room is full",
         "next_round": "Next round starting soon...",
@@ -71,7 +79,8 @@
         "energy": "Energy",
         "select_mode": "Select Mode",
         "redirecting": "Redirecting...",
-        "mode_label": "Mode: {{mode}}"
+        "mode_label": "Mode: {{mode}}",
+        "instruction": "Select your mode and click the button above to start searching for an opponent."
     },
     "profile": {
         "title": "Profile",

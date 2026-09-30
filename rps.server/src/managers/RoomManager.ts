@@ -71,7 +71,9 @@ export class RoomManager {
             room.players = room.players.filter(p => p.id !== userId);
             user.roomId = undefined;
 
-            if (room.players.length === 0) {
+            // Nobody human left: drop the room and its bots
+            if (room.players.every(p => p.isBot)) {
+                room.players.forEach(p => this.users.delete(p.id));
                 this.rooms.delete(roomId);
             }
             return room;

@@ -3,8 +3,18 @@ import { IRoom, IPlayerState, Move } from '../types';
 import { calculateElo, getTier } from '../utils/elo';
 import User from '../models/User';
 import MatchHistory from '../models/MatchHistory';
+import { emitRoom } from '../roomView';
+
+type Hand = Exclude<Move, null>;
+const HANDS: Hand[] = ['rock', 'paper', 'scissors'];
+const BEATS: Record<Hand, Hand> = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+const ROUND_TIME_MS = 10000;
+const CARD_ROUNDS = 5; // rounds in card modes (deck has 6 cards)
+const BOT_COUNTING_CHANCE = 0.3; // how often the bot plays the card-counting move instead of a random one
 
 export class GameManager {
+    private roundTimers = new Map<string, NodeJS.Timeout>();
+
     constructor(private io: any, private roomManager: any) { }
 
     // Helper to determine round winner
@@ -28,6 +38,7 @@ export class GameManager {
         room.currentRound = 1;
         room.gameWinner = null;
         room.roundWinner = null;
+        room.isSuddenDeath = false;
 
         // Reset players
         room.players.forEach(p => {
@@ -39,6 +50,19 @@ export class GameManager {
         });
 
         console.log(`[GameManager] Room ${room.id} started!`);
+
+        // Initialize Decks for Standard Modes (Normal, Rank, Hardcore)
+        if (room.mode !== 'classic') {
+            room.players.forEach(p => {
+                p.deck = { rock: 2, paper: 2, scissors: 2 };
+                // Sync deck to memory user
+                const memUser = this.roomManager.getUser(p.id);
+                if (memUser) {
+                    memUser.deck = p.deck;
+                    this.io.to(p.id).emit('user_updated', memUser);
+                }
+            });
+        }
 
         // Handle Equipped Items
         const User = require('../models/User').default;
@@ -136,6 +160,65 @@ export class GameManager {
                 console.error(`[GameManager] Error processing items for ${player.nickname}`, e);
             }
         }
+
+        this.startRound(room);
+    }
+
+    // Single entry point for a move (player socket, round timeout, bot).
+    async submitMove(room: IRoom, playerId: string, move: Move) {
+        const roundFinished = await this.handleMove(room, playerId, move);
+        emitRoom(this.io, room);
+
+        if (roundFinished && room.gameState !== 'GAME_OVER') {
+            setTimeout(() => {
+                if (room.gameState !== 'ROUND_RESULT') return; // forfeited in the meantime
+                this.resetRound(room);
+                emitRoom(this.io, room);
+            }, 1000); // 1 second delay for round result
+        }
+    }
+
+    private startRound(room: IRoom) {
+        const round = room.currentRound;
+        clearTimeout(this.roundTimers.get(room.id));
+        room.roundDeadline = Date.now() + ROUND_TIME_MS;
+        this.roundTimers.set(room.id, setTimeout(() => this.onRoundTimeout(room, round), ROUND_TIME_MS));
+
+        for (const p of room.players) {
+            if (!p.isBot) continue;
+            setTimeout(() => {
+                if (room.gameState !== 'PLAYING' || room.currentRound !== round) return;
+                this.submitMove(room, p.id, this.pickBotMove(room, p));
+            }, 1000 + Math.random() * 2000);
+        }
+    }
+
+    // Anyone who hasn't moved when time runs out plays a random legal card.
+    private async onRoundTimeout(room: IRoom, round: number) {
+        this.roundTimers.delete(room.id);
+        if (room.gameState !== 'PLAYING' || room.currentRound !== round) return;
+        for (const p of room.players.filter(p => !p.move)) {
+            const legal = this.legalMoves(room, p);
+            await this.submitMove(room, p.id, legal[Math.floor(Math.random() * legal.length)]);
+        }
+    }
+
+    private legalMoves(room: IRoom, p: IPlayerState): Hand[] {
+        if (room.mode === 'classic' || room.isSuddenDeath || !p.deck) return HANDS;
+        return HANDS.filter(m => p.deck![m] > 0);
+    }
+
+    // Mostly random; sometimes plays the move that fares best against the opponent's remaining cards.
+    private pickBotMove(room: IRoom, bot: IPlayerState): Hand {
+        const legal = this.legalMoves(room, bot);
+        const opp = room.players.find(p => p.id !== bot.id);
+        const oppDeck = opp && !room.isSuddenDeath ? opp.deck : undefined;
+
+        if (oppDeck && Math.random() < BOT_COUNTING_CHANCE) {
+            const score = (m: Hand) => oppDeck[BEATS[m]] - oppDeck[HANDS.find(k => BEATS[k] === m)!];
+            return legal.reduce((best, m) => (score(m) > score(best) ? m : best));
+        }
+        return legal[Math.floor(Math.random() * legal.length)];
     }
 
     async handleMove(room: IRoom, playerId: string, move: Move): Promise<boolean> {
@@ -143,6 +226,17 @@ export class GameManager {
 
         const player = room.players.find(p => p.id === playerId);
         if (player && !player.move) {
+
+            // Validate Card Battle Move (Standard Modes)
+            // Skip validation if Sudden Death is active
+            if (room.mode !== 'classic' && !room.isSuddenDeath && player.deck) {
+                if (move && player.deck[move] > 0) {
+                    // Valid move
+                } else {
+                    return false; // Invalid move (no cards left)
+                }
+            }
+
             player.move = move;
 
             // Track move for history
@@ -181,35 +275,111 @@ export class GameManager {
             room.roundWinner = 'draw';
         }
 
-        room.gameState = 'ROUND_RESULT';
+        // DECREMENT DECKS HERE (Standard Modes)
+        // Only if NOT Sudden Death
+        if (room.mode !== 'classic' && !room.isSuddenDeath) {
+            if (p1.deck && p1.move) p1.deck[p1.move] -= 1;
+            if (p2.deck && p2.move) p2.deck[p2.move] -= 1;
 
-        // Check Win Condition (Best of 3 -> First to 2)
-        if (p1.score >= 2) {
-            room.gameWinner = p1.id;
-            room.gameState = 'GAME_OVER';
-            const { winnerEloChange, loserEloChange } = await this.handleGameEnd(room, p1, p2);
-
-            this.io.to(room.id).emit('game_over', {
-                winnerId: p1.id,
-                reason: 'score_limit',
-                eloChanges: {
-                    [p1.id]: winnerEloChange,
-                    [p2.id]: loserEloChange
+            // Sync updated decks to clients
+            [p1, p2].forEach(p => {
+                const memUser = this.roomManager.getUser(p.id);
+                if (memUser && p.deck) {
+                    memUser.deck = p.deck;
+                    this.io.to(p.id).emit('user_updated', memUser);
                 }
             });
+        }
 
-        } else if (p2.score >= 2) {
-            room.gameWinner = p2.id;
+        room.gameState = 'ROUND_RESULT';
+
+        // Check Win Condition
+        let gameOver = false;
+        let p1Wins = false;
+        let p2Wins = false;
+
+        if (room.isSuddenDeath) {
+            // Sudden Death: First to win a round wins Game
+            if (room.roundWinner && room.roundWinner !== 'draw') {
+                gameOver = true;
+                if (room.roundWinner === p1.id) p1Wins = true;
+                else if (room.roundWinner === p2.id) p2Wins = true;
+            }
+            // If draw, continue sudden death
+        } else if (room.mode !== 'classic') {
+            // Standard Modes: CARD_ROUNDS rounds from a 6-card deck, so the last round is still a choice.
+            // Ends early once the trailing player can no longer catch up.
+            const roundsLeft = CARD_ROUNDS - room.currentRound;
+            const lead = p1.score - p2.score;
+            if (Math.abs(lead) > roundsLeft) {
+                gameOver = true;
+                p1Wins = lead > 0;
+                p2Wins = lead < 0;
+            } else if (roundsLeft <= 0) {
+                // Tied after the last round -> Enter Sudden Death
+                room.isSuddenDeath = true;
+                console.log(`[GameManager] Room ${room.id} entering SUDDEN DEATH`);
+            }
+        } else {
+            // Classic: Best of 3 (First to 2)
+            if (p1.score >= 2) {
+                gameOver = true;
+                p1Wins = true;
+            } else if (p2.score >= 2) {
+                gameOver = true;
+                p2Wins = true;
+            }
+        }
+
+        if (gameOver) {
             room.gameState = 'GAME_OVER';
-            const { winnerEloChange, loserEloChange } = await this.handleGameEnd(room, p2, p1);
+            let winnerId = null;
+            let loserId = null;
+            let reason = 'score_limit';
+
+            if (p1Wins) {
+                room.gameWinner = p1.id;
+                winnerId = p1.id;
+                loserId = p2.id;
+            } else if (p2Wins) {
+                room.gameWinner = p2.id;
+                winnerId = p2.id;
+                loserId = p1.id;
+            } else {
+                // Draw (Only possible in Card Battle)
+                room.gameWinner = 'draw';
+                reason = 'draw';
+            }
+
+            let winnerEloChange = 0;
+            let loserEloChange = 0;
+
+            if (winnerId && loserId) {
+                const pWinner = room.players.find(p => p.id === winnerId);
+                const pLoser = room.players.find(p => p.id === loserId);
+
+                // Reuse handleGameEnd but we need to handle Draw case if needed?
+                // handleGameEnd assumes winner/loser. 
+                // If Draw, we skip ELO update or handle it specifically?
+                // Current handleGameEnd implementation requires winner/loser objects.
+
+                if (pWinner && pLoser) {
+                    const result = await this.handleGameEnd(room, pWinner, pLoser);
+                    winnerEloChange = result.winnerEloChange;
+                    loserEloChange = result.loserEloChange;
+                }
+            } else {
+                // Handle Draw Case (No ELO change generally or small logic?)
+                // For now, no ELO change on draw.
+            }
 
             this.io.to(room.id).emit('game_over', {
-                winnerId: p2.id,
-                reason: 'score_limit',
-                eloChanges: {
-                    [p2.id]: winnerEloChange,
-                    [p1.id]: loserEloChange
-                }
+                winnerId: room.gameWinner,
+                reason: reason,
+                eloChanges: winnerId && loserId ? {
+                    [winnerId]: winnerEloChange,
+                    [loserId]: loserEloChange
+                } : {}
             });
 
         } else {
@@ -219,6 +389,9 @@ export class GameManager {
 
     private async handleGameEnd(room: IRoom, winner: IPlayerState, loser: IPlayerState): Promise<{ winnerEloChange: number, loserEloChange: number }> {
         console.log(`[GameManager] Handling Game End. Winner: ${winner.nickname}, Loser: ${loser.nickname}`);
+
+        // Bot games are practice: no hearts, tokens, stats or history
+        if (winner.isBot || loser.isBot) return { winnerEloChange: 0, loserEloChange: 0 };
 
         if (!winner._id || !loser._id) {
             console.error('Missing User IDs for game end processing');
@@ -294,7 +467,12 @@ export class GameManager {
                 if (winnerDoc.stats.hardcore.currentStreak > winnerDoc.stats.hardcore.seasonBestStreak) {
                     winnerDoc.stats.hardcore.seasonBestStreak = winnerDoc.stats.hardcore.currentStreak;
                 }
-                loserDoc.stats.hardcore.currentStreak = 0;
+                // Streak Shield: absorbs one streak reset
+                if (loserDoc.activeEffects?.includes('shield')) {
+                    loserDoc.activeEffects = loserDoc.activeEffects.filter(e => e !== 'shield');
+                } else {
+                    loserDoc.stats.hardcore.currentStreak = 0;
+                }
 
             } else {
                 // Normal Mode Stats (default 'stats' field)
@@ -322,13 +500,18 @@ export class GameManager {
                 }
             }
 
-            // Loser Heart Deduction
+            // Heart Deduction (Loser pays energy cost)
+            // Winner pays nothing (Energy reserved for playing again?)
             loserDoc.assets.hearts -= 1;
-            if (loserDoc.assets.hearts >= 4) {
+
+            // Handle Heart Recovery Timer for Loser
+            if (loserDoc.assets.hearts < 5 && loserDoc.assets.hearts >= 4) {
                 if (loserDoc.assets.hearts === 4) {
                     loserDoc.assets.lastHeartUpdate = new Date();
                 }
             }
+
+
 
             await winnerDoc.save();
             await loserDoc.save();
@@ -435,6 +618,7 @@ export class GameManager {
         room.roundWinner = null;
         room.players.forEach(p => p.move = null);
         room.currentRound += 1;
+        this.startRound(room);
     }
 
     async forfeitGame(room: IRoom, disconnectedIds: string) {
@@ -467,7 +651,7 @@ export class GameManager {
                     [loser.id]: loserEloChange
                 }
             });
-            this.io.to(room.id).emit('room_updated', room);
+            emitRoom(this.io, room);
         }
     }
     async useItem(room: IRoom, userId: string, itemId: string) {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useSocket } from '@/components/providers/SocketProvider';
-import { IPlayerState } from '@/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../providers/AuthProvider';
@@ -59,35 +58,35 @@ export default function ProfileView() {
         const division = stats.division || '';
 
         return (
-            <div className="bg-gray-800/40 border border-gray-700/50 p-4 rounded-xl backdrop-blur-sm w-full mb-4">
+            <div className="bg-white border-b-4 border-gray-200 p-4 rounded-2xl shadow-sm w-full mb-4">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-1 rounded-lg">
                         {t(`lobby.modes.${mode}`)} {t('profile.performance')}
                     </h2>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="flex flex-col">
-                        <span className="text-green-400 font-bold text-xl">{wins}</span>
-                        <span className="text-gray-500 text-xs uppercase">{t('profile.wins')}</span>
+                    <div className="flex flex-col bg-green-50 rounded-xl p-2">
+                        <span className="text-green-500 font-black text-xl">{wins}</span>
+                        <span className="text-green-800/50 text-[10px] font-bold uppercase">{t('profile.wins')}</span>
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-red-400 font-bold text-xl">{losses}</span>
-                        <span className="text-gray-500 text-xs uppercase">{t('profile.losses')}</span>
+                    <div className="flex flex-col bg-red-50 rounded-xl p-2">
+                        <span className="text-red-400 font-black text-xl">{losses}</span>
+                        <span className="text-red-800/50 text-[10px] font-bold uppercase">{t('profile.losses')}</span>
                     </div>
-                    <div className="flex flex-col">
-                        <span className="text-yellow-400 font-bold text-xl">{currentStreak}</span>
-                        <span className="text-gray-500 text-xs uppercase">{t('profile.streak')}</span>
+                    <div className="flex flex-col bg-yellow-50 rounded-xl p-2">
+                        <span className="text-yellow-500 font-black text-xl">{currentStreak}</span>
+                        <span className="text-yellow-800/50 text-[10px] font-bold uppercase">{t('profile.streak')}</span>
                     </div>
                 </div>
                 {mode === 'rank' && (
-                    <div className="mt-4 pt-4 border-t border-gray-700/30 grid grid-cols-2 gap-4 text-center">
+                    <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-100 grid grid-cols-2 gap-4 text-center">
                         <div className="flex flex-col">
-                            <span className="text-purple-400 font-bold">{elo}</span>
-                            <span className="text-gray-500 text-xs uppercase">{t('profile.elo')}</span>
+                            <span className="text-purple-500 font-black text-2xl">{elo}</span>
+                            <span className="text-gray-400 text-[10px] font-bold uppercase">{t('profile.elo')}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-yellow-400 font-bold">{tier} {division}</span>
-                            <span className="text-gray-500 text-xs uppercase">{t('profile.rank')}</span>
+                            <span className="text-orange-500 font-black text-xl">{tier} {division}</span>
+                            <span className="text-gray-400 text-[10px] font-bold uppercase">{t('profile.rank')}</span>
                         </div>
                     </div>
                 )}
@@ -96,35 +95,36 @@ export default function ProfileView() {
     };
 
     return (
-        <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] px-4 w-full max-w-md mx-auto py-8 space-y-6">
+        <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] px-4 w-full max-w-md mx-auto py-8 space-y-6 pt-36 pb-32">
 
             {/* Profile Header */}
-            <div className="text-center space-y-2">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full mx-auto flex items-center justify-center text-4xl shadow-xl border-4 border-gray-900">
+            <div className="text-center space-y-3">
+                <div className="w-24 h-24 bg-white rounded-[2rem] mx-auto flex items-center justify-center text-5xl shadow-xl border-4 border-white rotate-3 hover:rotate-0 transition-transform duration-300">
                     😎
                 </div>
-                <h1 className="text-2xl font-black text-white">{me.nickname}</h1>
+                <div className="bg-white/80 backdrop-blur-sm px-6 py-2 rounded-full inline-block shadow-sm">
+                    <h1 className="text-2xl font-black text-gray-800">{me.nickname}</h1>
+                </div>
             </div>
 
             {/* Stats */}
             <div className="w-full">
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">{t('profile.performance')}</h3>
                 {renderStats('rank')}
                 {renderStats('normal')}
             </div>
 
             {/* Inventory */}
             <div className="w-full">
-                <div className="flex justify-between items-center mb-2 px-1">
-                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+                <div className="flex justify-between items-center mb-4 px-1">
+                    <h3 className="text-sm font-black text-gray-500 uppercase tracking-widest pl-2 border-l-4 border-[#FF6B6B]">
                         {t('profile.inventory')}
                     </h3>
-                    <span className="text-[10px] bg-gray-700/50 text-gray-300 px-2 py-0.5 rounded-full font-mono">
-                        {me.inventory?.length || 0}
+                    <span className="text-xs bg-orange-100 text-orange-600 px-3 py-1 rounded-full font-bold">
+                        {me.inventory?.length || 0} Items
                     </span>
                 </div>
 
-                <div className="flex flex-col gap-2 bg-gray-800/20 p-2 rounded-xl border border-gray-700/30 min-h-[100px]">
+                <div className="flex flex-col gap-3 min-h-[100px]">
                     {me.inventory && me.inventory.length > 0 ? (
                         me.inventory.map((item, idx) => {
                             const isEquipped = me.equippedItems?.includes(item.itemId);
@@ -142,9 +142,9 @@ export default function ProfileView() {
                             );
                         })
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-8 text-gray-500 space-y-2">
-                            <span className="text-2xl">🎒</span>
-                            <p className="text-xs">{t('profile.empty_inventory')}</p>
+                        <div className="flex flex-col items-center justify-center py-12 text-gray-400 space-y-3 bg-white/50 rounded-2xl border-2 border-dashed border-gray-200">
+                            <span className="text-4xl grayscale opacity-50">🎒</span>
+                            <p className="text-sm font-medium">{t('profile.empty_inventory')}</p>
                         </div>
                     )}
                 </div>
