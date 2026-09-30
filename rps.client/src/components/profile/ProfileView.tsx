@@ -96,7 +96,7 @@ export default function ProfileView() {
     };
 
     return (
-        <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] px-4 w-full max-w-md mx-auto py-8 space-y-6">
+        <div className="flex flex-col items-center min-h-[calc(100vh-6rem)] px-4 w-full max-w-md mx-auto pt-20 pb-24 space-y-6">
 
             {/* Profile Header */}
             <div className="text-center space-y-2">

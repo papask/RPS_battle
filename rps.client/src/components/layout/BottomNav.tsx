@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 
 import { useTranslation } from 'react-i18next';
@@ -12,15 +13,15 @@ export default function BottomNav() {
     const isActive = (path: string) => pathname === path;
 
     const navItems = [
-        { id: 'home', label: t('navigation.home'), icon: '🏠', path: '/' },
-        { id: 'shop', label: t('navigation.shop'), icon: '🛍️', path: '/shop' },
-        { id: 'battle', label: t('navigation.battle'), icon: '⚔️', path: '/battle', main: true },
-        { id: 'rank', label: t('navigation.rank'), icon: '🏆', path: '/leaderboard' },
-        { id: 'profile', label: t('navigation.profile'), icon: '👤', path: '/profile' },
+        { id: 'home', label: t('navigation.home'), icon: '/icons/nav/home.svg', path: '/' },
+        { id: 'shop', label: t('navigation.shop'), icon: '/icons/nav/shop.svg', path: '/shop' },
+        { id: 'battle', label: t('navigation.battle'), icon: '/icons/nav/battle.svg', path: '/battle', main: true },
+        { id: 'rank', label: t('navigation.rank'), icon: '/icons/nav/rank.svg', path: '/leaderboard' },
+        { id: 'profile', label: t('navigation.profile'), icon: '/icons/nav/profile.svg', path: '/profile' },
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-800 pb-safe md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md md:border-x">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-indigo-950 border-t-4 border-amber-400 shadow-[0_-4px_0_#1b1030] pb-safe md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-md md:border-x">
             <div className="flex justify-around items-end px-2 pb-2">
                 {navItems.map((item) => {
                     const active = isActive(item.path);
@@ -32,13 +33,13 @@ export default function BottomNav() {
                                 onClick={() => router.push(item.path)}
                                 className="relative -top-6 group"
                             >
-                                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-lg transition-transform duration-200 group-active:scale-95 border-4 ${active
-                                    ? 'bg-gradient-to-br from-purple-500 to-pink-500 border-gray-900 text-white'
-                                    : 'bg-gray-800 border-gray-900 text-gray-400 group-hover:bg-gray-700'
+                                <div className={`w-20 h-20 flex items-center justify-center border-4 border-[#1b1030] shadow-[4px_4px_0_#1b1030] outline-4 outline-amber-400 -outline-offset-8 transition-transform duration-100 group-hover:-translate-y-0.5 group-active:translate-x-1 group-active:translate-y-1 group-active:shadow-none ${active
+                                    ? 'bg-rose-600'
+                                    : 'bg-indigo-700'
                                     }`}>
-                                    {item.icon}
+                                    <Image src={item.icon} alt="" width={48} height={48} className="[image-rendering:pixelated]" />
                                 </div>
-                                <span className={`absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${active ? 'text-white' : 'text-gray-500'
+                                <span className={`absolute -bottom-5 left-1/2 -translate-x-1/2 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors drop-shadow-[0_1px_0_#000] ${active ? 'text-amber-300' : 'text-gray-300'
                                     }`}>
                                     {item.label}
                                 </span>
@@ -50,13 +51,19 @@ export default function BottomNav() {
                         <button
                             key={item.id}
                             onClick={() => router.push(item.path)}
-                            className={`flex flex-col items-center py-3 px-2 min-w-[4rem] transition-colors duration-200 ${active ? 'text-white' : 'text-gray-600 hover:text-gray-400'
-                                }`}
+                            className="group flex flex-col items-center py-2 px-2 min-w-[4rem]"
                         >
-                            <span className={`text-2xl mb-1 transition-transform duration-200 ${active ? 'scale-110' : ''}`}>
-                                {item.icon}
-                            </span>
-                            <span className="text-[10px] font-medium uppercase tracking-wide">
+                            <Image
+                                src={item.icon}
+                                alt=""
+                                width={32}
+                                height={32}
+                                className={`mb-1 [image-rendering:pixelated] transition-transform duration-100 group-active:translate-y-0.5 ${active
+                                    ? '-translate-y-1 drop-shadow-[2px_2px_0_#1b1030]'
+                                    : 'grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100'
+                                    }`}
+                            />
+                            <span className={`text-[10px] font-black uppercase tracking-wide drop-shadow-[0_1px_0_#000] ${active ? 'text-amber-300' : 'text-gray-500'}`}>
                                 {item.label}
                             </span>
                         </button>

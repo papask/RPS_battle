@@ -8,8 +8,24 @@
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
-    --font-sans: var(--font-geist-sans);
-    --font-mono: var(--font-geist-mono);
+    --font-sans: var(--font-pixel);
+    --font-mono: var(--font-pixel-mono);
+
+    /* Pixel style: hard offset shadows instead of soft ones */
+    --shadow-2xs: 1px 1px 0 0 #000;
+    --shadow-xs: 2px 2px 0 0 #000;
+    --shadow-sm: 2px 2px 0 0 #000;
+    --shadow-md: 3px 3px 0 0 #000;
+    --shadow-lg: 4px 4px 0 0 #000;
+    --shadow-xl: 5px 5px 0 0 #000;
+    --shadow-2xl: 6px 6px 0 0 #000;
+
+    /* No blur in pixel style */
+    --blur-xs: 0;
+    --blur-sm: 0;
+    --blur-md: 0;
+    --blur-lg: 0;
+    --blur-xl: 0;
 
     --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
 
@@ -37,8 +53,19 @@ body {
     background: #111827;
     /* gray-900 */
     color: var(--foreground);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-pixel), monospace;
     min-height: 100vh;
+}
+
+/* Pixel style: square corners everywhere, crisp image scaling */
+*,
+*::before,
+*::after {
+    border-radius: 0 !important;
+}
+
+img {
+    image-rendering: pixelated;
 }
 
 /* Safe Area Utilities for Mobile */

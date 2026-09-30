@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -7,14 +7,18 @@ import I18nProvider from "@/components/providers/I18nProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import AppShell from "@/components/layout/AppShell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Galmuri (SIL OFL 1.1, see fonts/Galmuri-LICENSE.txt) - pixel font with Hangul support
+const pixelSans = localFont({
+  variable: "--font-pixel",
+  src: [
+    { path: "./fonts/Galmuri11.woff2", weight: "400" },
+    { path: "./fonts/Galmuri11-Bold.woff2", weight: "700" },
+  ],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const pixelMono = localFont({
+  variable: "--font-pixel-mono",
+  src: "./fonts/GalmuriMono11.woff2",
 });
 
 export const metadata: Metadata = {
@@ -38,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${pixelSans.variable} ${pixelMono.variable}`}
       >
         <I18nProvider>
           <SocketProvider>

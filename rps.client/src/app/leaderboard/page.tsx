@@ -84,11 +84,11 @@ export default function LeaderboardPage() {
                         <table className="w-full text-left whitespace-nowrap">
                             <thead className="bg-gray-800 text-gray-400 uppercase text-[10px] font-bold tracking-wider">
                                 <tr>
-                                    <th className="px-4 py-3">#</th>
-                                    <th className="px-4 py-3">{t('rank.player')}</th>
-                                    <th className="px-4 py-3">{t('rank.tier')}</th>
-                                    <th className="px-4 py-3 text-center">{t('rank.wl')}</th>
-                                    <th className="px-4 py-3 text-center">{t('rank.streak')}</th>
+                                    <th className="px-3 py-3">#</th>
+                                    <th className="px-3 py-3">{t('rank.player')}</th>
+                                    <th className="px-3 py-3">{t('rank.tier')}</th>
+                                    <th className="px-3 py-3 text-center">{t('rank.wl')}</th>
+                                    <th className="px-3 py-3 text-center">{t('rank.streak')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-700/50">
@@ -107,13 +107,13 @@ export default function LeaderboardPage() {
                                 ) : (
                                     leaderboard.map((entry, index) => (
                                         <tr key={entry._id} className={`hover:bg-gray-700/30 transition-colors ${entry.profile.nickname === me?.nickname ? 'bg-purple-900/20' : ''}`}>
-                                            <td className="px-4 py-4 font-bold text-gray-400 text-sm">
+                                            <td className="px-3 py-4 font-bold text-gray-400 text-sm">
                                                 {index + 1}
                                             </td>
-                                            <td className="px-4 py-4 font-bold text-white text-sm">
+                                            <td className="px-3 py-4 font-bold text-white text-sm">
                                                 {entry.profile.nickname}
                                             </td>
-                                            <td className="px-4 py-4">
+                                            <td className="px-3 py-4">
                                                 <div className={`font-bold text-xs ${entry.stats?.rank?.tier === 'Master' ? 'text-purple-400' :
                                                     entry.stats?.rank?.tier === 'Diamond' ? 'text-blue-400' :
                                                         entry.stats?.rank?.tier === 'Platinum' ? 'text-cyan-400' :
@@ -124,12 +124,12 @@ export default function LeaderboardPage() {
                                                 </div>
                                                 <div className="text-[10px] text-gray-500">{entry.stats?.rank?.elo || 1000} LP</div>
                                             </td>
-                                            <td className="px-4 py-4 text-center text-xs">
+                                            <td className="px-3 py-4 text-center text-xs">
                                                 <span className="text-green-400 font-bold">{entry.stats?.rank?.wins || 0}</span>
                                                 <span className="text-gray-600 mx-1">/</span>
                                                 <span className="text-red-400 font-bold">{entry.stats?.rank?.losses || 0}</span>
                                             </td>
-                                            <td className="px-4 py-4 text-center">
+                                            <td className="px-3 py-4 text-center">
                                                 <span className="text-orange-500 font-bold text-sm">🔥 {entry.stats?.hardcore?.bestStreak || 0}</span>
                                             </td>
                                         </tr>
