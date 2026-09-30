@@ -68,7 +68,7 @@ export default function HomeView() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="space-y-2"
             >
-                <h1 className="text-4xl font-black text-gray-800 drop-shadow-sm">
+                <h1 className="text-4xl font-black text-gray-800 drop-shadow-sm break-keep [overflow-wrap:anywhere]">
                     {t('home.welcome', { name: me.nickname })}
                 </h1>
                 <p className="text-gray-500 font-medium">{t('home.ready_message')}</p>
