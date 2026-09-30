@@ -6,17 +6,25 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 import { useTranslation } from 'react-i18next';
+import { LANG_STORAGE_KEY } from '@/i18n';
+import { useCardArt, setCardArt } from '@/cardArt';
 
-export default function TopBar() {
+// embedded: rendered in normal flow (inside the game room's header drawer) instead of fixed to the viewport
+// onSettingsOpenChange: lets the drawer stay open while the settings menu is in use
+export default function TopBar({ embedded = false, onSettingsOpenChange }: { embedded?: boolean; onSettingsOpenChange?: (open: boolean) => void }) {
     const { user: me } = useAuth();
-    const { i18n } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [recoveryTimeLeft, setRecoveryTimeLeft] = useState<string>('');
     const socket = useSocket();
+    const cardArt = useCardArt();
+
+    useEffect(() => { onSettingsOpenChange?.(isSettingsOpen); }, [isSettingsOpen, onSettingsOpenChange]);
 
     const toggleLanguage = () => {
         const newLang = i18n.language === 'ko' ? 'en' : 'ko';
         i18n.changeLanguage(newLang);
+        try { localStorage.setItem(LANG_STORAGE_KEY, newLang); } catch { }
         setIsSettingsOpen(false);
     };
 
@@ -49,7 +57,7 @@ export default function TopBar() {
     if (!me) return null;
 
     return (
-        <div className="fixed top-0 left-0 w-full z-50 md:left-1/2 md:-translate-x-1/2 md:max-w-md min-h-[4rem] bg-white/90 backdrop-blur-md border-b border-orange-100 px-4 flex items-center justify-between shadow-sm safe-top md:border-x md:border-orange-100">
+        <div className={`${embedded ? 'relative z-10' /* backdrop-blur makes a stacking context: lift it so the settings menu covers the room bar and tab */ : 'fixed top-0 left-0 z-50 md:left-1/2 md:-translate-x-1/2 md:max-w-md'} w-full min-h-[4rem] bg-white/90 backdrop-blur-md border-b border-orange-100 px-4 flex items-center justify-between shadow-sm safe-top md:border-x md:border-orange-100`}>
             {/* User Info */}
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#FF6B6B] flex items-center justify-center text-white font-bold shadow-md border-2 border-white">
@@ -102,15 +110,24 @@ export default function TopBar() {
                     {isSettingsOpen && (
                         <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden text-sm animate-in fade-in zoom-in duration-200 z-50">
                             <div className="p-3 border-b border-gray-100">
-                                <span className="text-xs text-gray-400 font-bold px-2 uppercase tracking-wider">Settings</span>
+                                <span className="text-xs text-gray-400 font-bold px-2 uppercase tracking-wider">{t('settings.title')}</span>
                             </div>
                             <button
                                 onClick={toggleLanguage}
                                 className="w-full text-left px-4 py-3 hover:bg-orange-50 flex items-center justify-between transition-colors group"
                             >
-                                <span className="text-gray-600 group-hover:text-orange-600 font-medium">Language</span>
+                                <span className="text-gray-600 group-hover:text-orange-600 font-medium">{t('settings.language')}</span>
                                 <span className="font-bold text-white bg-[#4ECDC4] px-2 py-0.5 rounded-full text-xs shadow-sm">
                                     {i18n.language === 'ko' ? 'KR' : 'EN'}
+                                </span>
+                            </button>
+                            <button
+                                onClick={() => setCardArt(cardArt === 'glove' ? 'object' : 'glove')}
+                                className="w-full text-left px-4 py-3 hover:bg-orange-50 flex items-center justify-between transition-colors group border-t border-gray-100"
+                            >
+                                <span className="text-gray-600 group-hover:text-orange-600 font-medium">{t('settings.card_art')}</span>
+                                <span className="font-bold text-white bg-[#FF6B6B] px-2 py-0.5 rounded-full text-xs shadow-sm">
+                                    {t(cardArt === 'glove' ? 'settings.card_art_glove' : 'settings.card_art_object')}
                                 </span>
                             </button>
                             <button
@@ -120,7 +137,7 @@ export default function TopBar() {
                                 }}
                                 className="w-full text-left px-4 py-3 hover:bg-red-50 text-red-500 flex items-center gap-2 transition-colors border-t border-gray-100"
                             >
-                                <span className="font-bold">Logout</span>
+                                <span className="font-bold">{t('settings.logout')}</span>
                                 <span className="text-xs">↪</span>
                             </button>
                         </div>

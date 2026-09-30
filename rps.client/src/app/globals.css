@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Short screens (e.g. 375x667): battle screen switches to compact cards */
+@custom-variant short (@media (max-height: 760px));
+
 :root {
     /* Warm/Cute Theme Palette */
     --background: #fff8e1;
@@ -146,7 +149,8 @@ img {
 }
 /* Pixel battle style (battle screen) */
 .font-pixel {
-    font-family: var(--font-pixel), monospace;
+    /* Press Start 2P has Latin only; Hangul falls through to Galmuri */
+    font-family: var(--font-pixel), var(--font-galmuri), monospace;
 }
 
 .px-scene {

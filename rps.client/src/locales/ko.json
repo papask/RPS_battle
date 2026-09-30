@@ -4,7 +4,22 @@
         "enter_nickname": "닉네임을 입력하세요",
         "play": "게임 시작",
         "logging_in": "로그인 중...",
-        "welcome": "환영합니다!"
+        "welcome": "환영합니다!",
+        "nickname_taken": "이미 사용 중인 닉네임이에요. 다른 닉네임을 입력해 주세요.",
+        "nickname_invalid": "닉네임은 1~20자로 입력해 주세요.",
+        "create_failed": "계정을 만들지 못했어요. 잠시 후 다시 시도해 주세요."
+    },
+    "common": {
+        "notice": "알림",
+        "ok": "확인"
+    },
+    "settings": {
+        "title": "설정",
+        "language": "언어",
+        "logout": "로그아웃",
+        "card_art": "카드 그림",
+        "card_art_glove": "장갑",
+        "card_art_object": "사물"
     },
     "lobby": {
         "welcome": "환영합니다, {{name}}님!",
@@ -33,6 +48,8 @@
         "match_found": "상대 찾기 성공!"
     },
     "game": {
+        "header_show": "상단 메뉴 열기",
+        "header_hide": "상단 메뉴 닫기",
         "vs": "VS",
         "you": "(나)",
         "waiting_opponent": "상대방을 기다리는 중...",

@@ -14,7 +14,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="w-full md:max-w-md mx-auto relative bg-[#fff8e1] min-h-screen shadow-2xl md:border-x border-gray-200">
-            {me && <TopBar />}
+            {/* The game room renders TopBar itself, inside its collapsible header drawer */}
+            {me && !isGameRoom && <TopBar />}
 
             {/* Main Content Area */}
             {children}

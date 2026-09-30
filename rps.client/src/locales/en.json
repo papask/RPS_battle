@@ -4,7 +4,22 @@
         "enter_nickname": "Enter your nickname",
         "play": "PLAY",
         "logging_in": "Logging in...",
-        "welcome": "Welcome back!"
+        "welcome": "Welcome back!",
+        "nickname_taken": "That nickname is already taken. Please choose another one.",
+        "nickname_invalid": "Nicknames must be 1–20 characters.",
+        "create_failed": "Couldn't create your account. Please try again shortly."
+    },
+    "common": {
+        "notice": "Notice",
+        "ok": "OK"
+    },
+    "settings": {
+        "title": "Settings",
+        "language": "Language",
+        "logout": "Logout",
+        "card_art": "Card art",
+        "card_art_glove": "Gloves",
+        "card_art_object": "Objects"
     },
     "lobby": {
         "welcome": "Welcome, {{name}}!",
@@ -33,6 +48,8 @@
         "match_found": "Match Found!"
     },
     "game": {
+        "header_show": "Show top menu",
+        "header_hide": "Hide top menu",
         "copy": "COPY",
         "status": "Status",
         "opponent": "Opponent",

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Card from './Card';
 import PixelSprite from './PixelSprite';
+import { useCardArt, moveSprite } from '@/cardArt';
 
 interface GameBoardProps {
     room: IRoom;
@@ -22,6 +23,7 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
     const router = useRouter();
     const [selectedMove, setSelectedMove] = useState<Move>(null);
     const [timeLeft, setTimeLeft] = useState(3);
+    const cardArt = useCardArt();
 
     // Identify Opponent
     const opponent = room.players.find(p => p.id !== me.id);
@@ -124,7 +126,7 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
             <div className="px-panel flex gap-3 px-3 py-2 mt-2">
                 {(['rock', 'paper', 'scissors'] as const).map(m => (
                     <div key={m} className="flex flex-col items-center gap-1 w-8">
-                        <PixelSprite name={m} size={24} />
+                        <PixelSprite name={moveSprite(m, cardArt)} size={24} />
                         <span className="font-pixel text-[8px] text-[#F4F4F4]">{opponent.deck![m]}</span>
                     </div>
                 ))}
@@ -184,9 +186,9 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
             <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none"
+                className="flex flex-col items-center justify-center z-20 pointer-events-none"
             >
-                <h2 className={`font-pixel text-3xl ${resultColor} drop-shadow-[4px_4px_0_#0D0E17] uppercase whitespace-nowrap`}>
+                <h2 className={`font-pixel text-3xl short:text-xl ${resultColor} drop-shadow-[4px_4px_0_#0D0E17] uppercase whitespace-nowrap`}>
                     {resultText}
                 </h2>
             </motion.div>
@@ -243,13 +245,13 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
             <div className="absolute top-1/2 left-0 w-full h-1 bg-[#333C57] z-0 pointer-events-none" />
 
             {/* --- TOP HALF (Opponent) --- */}
-            <div className="flex-1 flex flex-col relative w-full">
+            <div className="flex-1 basis-0 min-h-0 flex flex-col relative w-full">
                 {/* Content Container - Pinned to Top */}
                 <div className="w-full pt-4 flex flex-col items-center gap-2 z-10">
                     {renderOpponentHand()}
 
                     <div className="flex flex-col items-center gap-1">
-                        <div className="w-14 h-14 bg-[#B13E53] border-4 border-[#1A1C2C] shadow-[4px_4px_0_#0D0E17] flex items-center justify-center font-pixel text-lg text-[#F4F4F4] relative">
+                        <div className="w-14 h-14 short:w-10 short:h-10 bg-[#B13E53] border-4 border-[#1A1C2C] shadow-[4px_4px_0_#0D0E17] flex items-center justify-center font-pixel text-lg text-[#F4F4F4] relative">
                             {opponent?.nickname?.substring(0, 1).toUpperCase() || '?'}
                             {/* Opponent Status Indicator */}
                             {opponentMoved && room.gameState === 'PLAYING' && (
@@ -266,8 +268,9 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
                     </div>
                 </div>
 
-                {/* Opponent Played Card - Pinned to Bottom of Top Half */}
-                <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex justify-center w-24 h-32">
+                {/* Opponent Played Card - fills the rest of the top half; pb reserves room for the center round info */}
+                <div className="flex-1 min-h-0 flex items-center justify-center pb-8 short:pb-5 z-20 pointer-events-none">
+                    <div className="w-24 h-36 short:w-16 short:h-24 flex items-center justify-center">
                     <AnimatePresence>
                         {opponentMoved && (
                             <motion.div
@@ -287,41 +290,41 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
                             </motion.div>
                         )}
                         {!opponentMoved && room.gameState === 'PLAYING' && (
-                            <div className="w-20 h-28 border-4 border-dashed border-[#566C86] flex items-center justify-center">
+                            <div className="w-20 h-28 short:w-16 short:h-24 border-4 border-dashed border-[#566C86] flex items-center justify-center">
                                 <span className="px-blink font-pixel text-[8px] text-[#94B0C2]">...</span>
                             </div>
                         )}
                     </AnimatePresence>
+                    </div>
                 </div>
             </div>
 
 
             {/* --- ROUND INFO (Absolute Center) --- */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center justify-center">
-                {/* Round Badge */}
-                <div className="px-panel px-4 py-2 mb-3">
-                    <span className={`font-pixel text-[10px] whitespace-nowrap ${room.isSuddenDeath ? 'text-[#EF7D57]' : 'text-[#FFCD75]'}`}>
-                        {room.isSuddenDeath ? "SUDDEN DEATH" : `ROUND ${room.currentRound}`}
-                    </span>
-                </div>
-
-                {/* Round Timer */}
-                {roundSecondsLeft !== null && !selectedMove && (
-                    <div className={`font-pixel text-2xl mb-2 drop-shadow-[3px_3px_0_#0D0E17] ${roundSecondsLeft <= 3 ? 'text-[#EF7D57] px-blink' : 'text-[#F4F4F4]'}`}>
-                        {roundSecondsLeft}
+                {/* One row so it barely eats into either half: the result replaces the badge */}
+                {room.gameState === 'ROUND_RESULT' ? renderRoundResult() : (
+                    <div className="px-panel px-4 py-2 flex items-center gap-3">
+                        <span className={`font-pixel text-[10px] whitespace-nowrap ${room.isSuddenDeath ? 'text-[#EF7D57]' : 'text-[#FFCD75]'}`}>
+                            {room.isSuddenDeath ? "SUDDEN DEATH" : `ROUND ${room.currentRound}`}
+                        </span>
+                        {/* Round Timer */}
+                        {roundSecondsLeft !== null && !selectedMove && (
+                            <span className={`font-pixel text-sm leading-none ${roundSecondsLeft <= 3 ? 'text-[#EF7D57] px-blink' : 'text-[#F4F4F4]'}`}>
+                                {roundSecondsLeft}
+                            </span>
+                        )}
                     </div>
                 )}
-
-                {/* Result Text Overlay */}
-                {renderRoundResult()}
             </div>
 
 
             {/* --- BOTTOM HALF (Player) --- */}
-            <div className="flex-1 flex flex-col justify-end relative w-full">
+            <div className="flex-1 basis-0 min-h-0 flex flex-col relative w-full">
 
-                {/* Player Played Card - Pinned to Top of Bottom Half */}
-                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex justify-center w-24 h-32">
+                {/* Player Played Card - fills the space above my info row; pt reserves room for the center round info */}
+                <div className="flex-1 min-h-0 flex items-center justify-center pt-8 short:pt-5 z-20 pointer-events-none">
+                    <div className="w-24 h-36 short:w-16 short:h-24 flex items-center justify-center">
                     <AnimatePresence>
                         {selectedMove && (
                             <motion.div
@@ -338,6 +341,7 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
                             </motion.div>
                         )}
                     </AnimatePresence>
+                    </div>
                 </div>
 
                 {/* Hints Control (Absolute) */}
@@ -364,11 +368,11 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
 
 
                 {/* Player Avatar + Score (above the hand) */}
-                <div className="absolute bottom-44 left-4 flex items-center gap-2 z-10 pointer-events-none">
-                    <div className="w-10 h-10 bg-[#3B5DC9] border-4 border-[#1A1C2C] shadow-[3px_3px_0_#0D0E17] flex items-center justify-center font-pixel text-xs text-[#F4F4F4]">
+                <div className="flex items-center gap-2 px-4 pb-3 z-10 pointer-events-none">
+                    <div className="w-10 h-10 short:w-8 short:h-8 shrink-0 bg-[#3B5DC9] border-4 border-[#1A1C2C] shadow-[3px_3px_0_#0D0E17] flex items-center justify-center font-pixel text-xs text-[#F4F4F4]">
                         {me.nickname?.substring(0, 1).toUpperCase()}
                     </div>
-                    <span className="font-pixel text-[8px] bg-[#1A1C2C] text-[#F4F4F4] px-2 py-1">
+                    <span className="font-pixel text-[8px] bg-[#1A1C2C] text-[#F4F4F4] px-2 py-1 min-w-0 truncate">
                         {me.nickname}
                     </span>
                     {renderScore(me.score ?? 0)}
@@ -376,7 +380,7 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
 
                 {/* Player Hand - Fixed at Bottom */}
                 <div className="flex items-end justify-center perspective-500 w-full z-20 px-2 pb-0">
-                    <div className="flex justify-center -space-x-8 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+                    <div className="flex justify-center -space-x-8 short:-space-x-4 pb-[calc(env(safe-area-inset-bottom)+16px)] short:pb-[calc(env(safe-area-inset-bottom)+8px)]">
                         {playerHand.map((card, index) => {
                             const isExhausted = false; // Individual cards are just present or not. If deck logic is used, handle validation elsewhere or hide used.
                             // Actually, if we unroll, we just show what's available. If `me.deck` decrements, the list shrinks.

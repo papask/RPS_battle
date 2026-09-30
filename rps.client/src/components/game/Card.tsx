@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import PixelSprite from './PixelSprite';
+import { useCardArt, moveSprite } from '@/cardArt';
 
 interface CardProps {
     type: 'rock' | 'paper' | 'scissors' | 'unknown';
@@ -13,13 +15,6 @@ interface CardProps {
     isLoser?: boolean;    // Dim loser
     cardBackUrl?: string; // Optional custom card back image
 }
-
-const LABELS = {
-    rock: 'ROCK',
-    paper: 'PAPER',
-    scissors: 'SCISSORS',
-    unknown: ''
-};
 
 const FACE_COLORS = {
     rock: '#FFCD75',
@@ -43,6 +38,10 @@ export default function Card({
     isLoser = false,
     cardBackUrl
 }: CardProps) {
+    const { t, i18n } = useTranslation();
+    const art = useCardArt();
+    const isKo = i18n.language === 'ko';
+    const label = type === 'unknown' ? '' : isKo ? t(`game.moves.${type}`) : t(`game.moves.${type}`).toUpperCase();
 
     // Face Down Look (Card Back)
     if (isOpponent && !revealed) {
@@ -51,12 +50,12 @@ export default function Card({
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.25, ease: steps(3) }}
-                className={`px-frame w-20 h-28 flex items-center justify-center overflow-hidden ${!cardBackUrl ? 'px-card-back' : ''}`}
+                className={`px-frame w-20 h-28 short:w-16 short:h-24 flex items-center justify-center overflow-hidden ${!cardBackUrl ? 'px-card-back' : ''}`}
             >
                 {cardBackUrl ? (
                     <img src={cardBackUrl} alt="Card Back" className="w-full h-full object-cover" />
                 ) : (
-                    <PixelSprite name="unknown" size={32} />
+                    <PixelSprite name="unknown" size={32} className="short:w-6 short:h-[30px]" />
                 )}
             </motion.div>
         );
@@ -72,19 +71,20 @@ export default function Card({
             whileTap={!disabled && !isOpponent ? { y: 2 } : {}}
             onClick={onClick}
             disabled={disabled}
-            aria-label={LABELS[type]}
+            aria-label={label}
             style={{ backgroundColor: FACE_COLORS[type] }}
             className={`
-                px-frame relative w-24 h-36 flex flex-col items-center justify-center gap-2 p-2
+                px-frame relative w-24 h-36 short:w-16 short:h-24 flex flex-col items-center justify-center gap-2 short:gap-1 p-2 short:p-1
                 ${selected ? 'outline-4 outline-[#FFCD75] outline-offset-8 z-10' : ''}
                 ${disabled && !isWinner && !isLoser ? 'opacity-60 grayscale cursor-not-allowed' : ''}
                 ${isWinner ? 'outline-4 outline-[#A7F070] outline-offset-8' : ''}
                 ${isLoser ? 'opacity-40 grayscale' : ''}
             `}
         >
-            <PixelSprite name={type} size={56} />
-            <span className="font-pixel text-[8px] leading-none text-[#1A1C2C]">
-                {LABELS[type]}
+            <PixelSprite name={type === 'unknown' ? 'unknown' : moveSprite(type, art)} size={56} className="short:w-10 short:h-10" />
+            {/* Hangul falls through to Galmuri, which is drawn for 11px */}
+            <span className={`font-pixel leading-none text-[#1A1C2C] ${isKo ? 'text-[11px]' : 'text-[8px] short:text-[6px]'}`}>
+                {label}
             </span>
 
             {/* Count Badge (Bottom Right) */}

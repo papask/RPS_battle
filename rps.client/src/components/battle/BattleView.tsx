@@ -2,9 +2,10 @@
 
 import { useSocket } from '@/components/providers/SocketProvider';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../providers/AuthProvider';
+import MessageModal from '../ui/MessageModal';
 
 export default function BattleView() {
     const { t } = useTranslation();
@@ -20,6 +21,8 @@ export default function BattleView() {
     const [foundMatch, setFoundMatch] = useState(false);
     const [selectedMode, setSelectedMode] = useState<'classic' | 'normal' | 'rank' | 'hardcore'>('normal');
     const [isClient, setIsClient] = useState(false);
+    const [notice, setNotice] = useState<string | null>(null);
+    const closeNotice = useCallback(() => setNotice(null), []);
 
     // Sync hearts
     useEffect(() => {
@@ -83,7 +86,7 @@ export default function BattleView() {
     const handleQuickMatch = () => {
         if (!socket) return;
         if (hearts <= 0) {
-            alert(t('lobby.not_enough_hearts'));
+            setNotice(t('lobby.not_enough_hearts'));
             return;
         }
         setIsFindingMatch(true);
@@ -208,6 +211,7 @@ export default function BattleView() {
                 </p>
             </div>
 
+            <MessageModal message={notice} onClose={closeNotice} />
         </div>
     );
 }

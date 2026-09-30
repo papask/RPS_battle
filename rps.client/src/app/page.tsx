@@ -2,13 +2,24 @@
 
 import { useSocket } from '@/components/providers/SocketProvider';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import HomeView from '@/components/home/HomeView';
-import { IPlayerState } from '@/types';
+import MessageModal from '@/components/ui/MessageModal';
+
+// Server error strings -> localized messages
+const ERROR_KEYS: Record<string, string> = {
+  'Nickname already taken': 'login.nickname_taken',
+  'Invalid nickname': 'login.nickname_invalid',
+  'Failed to create user': 'login.create_failed',
+};
 
 export default function Home() {
   const socket = useSocket();
   const router = useRouter();
+  const { t } = useTranslation();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const closeError = useCallback(() => setErrorMessage(null), []);
 
   useEffect(() => {
     if (!socket) return;
@@ -19,18 +30,19 @@ export default function Home() {
     });
 
     socket.on('error', (message: string) => {
-      alert(`Error: ${message}`);
+      setErrorMessage(ERROR_KEYS[message] ? t(ERROR_KEYS[message]) : message);
     });
 
     return () => {
       socket.off('room_joined');
       socket.off('error');
     };
-  }, [socket, router]);
+  }, [socket, router, t]);
 
   return (
     <main className="w-full">
       <HomeView />
+      <MessageModal message={errorMessage} onClose={closeError} />
     </main>
   );
 }

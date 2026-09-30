@@ -4,9 +4,12 @@ import { useSocket } from '@/components/providers/SocketProvider';
 import GameBoard from '@/components/game/GameBoard';
 import { IPlayerState, IRoom } from '@/types';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/providers/AuthProvider';
+import MessageModal from '@/components/ui/MessageModal';
+import TopBar from '@/components/layout/TopBar';
+import { motion } from 'framer-motion';
 
 export default function RoomPage({ params }: { params: Promise<{ roomId: string }> }) {
     const { roomId } = use(params);
@@ -20,6 +23,26 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
 
     const [gameOverReason, setGameOverReason] = useState<string | null>(null);
     const [eloChanges, setEloChanges] = useState<{ [key: string]: number } | null>(null);
+
+    // Messages that end the visit: closing the popup goes back home
+    const [exitMessage, setExitMessage] = useState<string | null>(null);
+    const closeExitMessage = useCallback(() => {
+        setExitMessage(null);
+        router.push('/');
+    }, [router]);
+    const exitModal = <MessageModal message={exitMessage} onClose={closeExitMessage} />;
+
+    // Header drawer (top bar + room info): slides away while a game is in progress, tab reopens it
+    const inGame = room?.gameState === 'PLAYING' || room?.gameState === 'ROUND_RESULT';
+    const [headerOpen, setHeaderOpen] = useState(true);
+    useEffect(() => { setHeaderOpen(!inGame); }, [inGame]);
+    // Reopened mid-game via the tab: slide away again after 3s (held while the settings menu is open)
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    useEffect(() => {
+        if (!inGame || !headerOpen || settingsOpen) return;
+        const id = setTimeout(() => setHeaderOpen(false), 3000);
+        return () => clearTimeout(id);
+    }, [inGame, headerOpen, settingsOpen]);
 
     useEffect(() => {
         if (socket && !isAuthLoading) {
@@ -53,16 +76,14 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
             });
 
             socket.on('opponent_left', () => {
-                alert(t('game.result.opponent_disconnected'));
-                router.push('/');
+                setExitMessage(t('game.result.opponent_disconnected'));
             });
 
             socket.on('error', (message: string) => {
                 console.error(message);
                 // Added specific error handling from the change
                 if (message === 'Room is full') {
-                    alert(t('game.full'));
-                    router.push('/');
+                    setExitMessage(t('game.full'));
                 }
             });
         }
@@ -106,14 +127,22 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
                 <div className="text-gray-400 font-bold animate-pulse">
                     {isAuthLoading ? 'Authenticating...' : `Loading Room ${roomId}...`}
                 </div>
+                {exitModal}
             </div>
         );
     }
 
     return (
-        <main className="flex flex-col items-center font-sans w-full h-screen pt-16 overflow-hidden relative">
-            {/* Header - Compact & Absolute/Overlay or standard compact */}
-            <div className="w-full max-w-md px-4 py-2 mt-2 flex justify-between items-center z-40 relative">
+        <main className="flex flex-col items-center font-sans w-full h-screen overflow-hidden relative">
+            {/* Header Drawer - overlays the top of the board so opening it never reflows the game */}
+            <motion.div
+                className="absolute top-0 inset-x-0 z-40 bg-[#fff8e1] shadow-md"
+                initial={false}
+                animate={{ y: headerOpen ? 0 : '-100%' }}
+                transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+            >
+            {user && <TopBar embedded onSettingsOpenChange={setSettingsOpen} />}
+            <div className="w-full max-w-md mx-auto px-4 py-2 flex justify-between items-center relative">
                 <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Room ID</span>
                     <div className="flex items-center gap-2">
@@ -149,6 +178,20 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
                     </button>
                 </div>
             </div>
+
+            {/* Tab hanging below the drawer (right side, clear of the centered opponent cards); stays visible when closed */}
+            <button
+                onClick={() => setHeaderOpen(o => !o)}
+                aria-expanded={headerOpen}
+                aria-label={t(headerOpen ? 'game.header_hide' : 'game.header_show')}
+                className="absolute top-full right-4 w-14 h-6 flex items-center justify-center bg-[#1A1C2C] text-[#FFCD75] border-2 border-t-0 border-[#566C86] shadow-[3px_3px_0_#0D0E17]"
+            >
+                <svg viewBox="0 0 10 6" width="12" height="8" shapeRendering="crispEdges" aria-hidden="true"
+                    className={`transition-transform duration-200 ${headerOpen ? '' : 'rotate-180'}`}>
+                    <path d="M1 5L5 1L9 5" fill="none" stroke="currentColor" strokeWidth="2" />
+                </svg>
+            </button>
+            </motion.div>
 
             {/* Game Area */}
             <div className="flex flex-col items-center w-full flex-1 min-h-0">
@@ -193,6 +236,7 @@ export default function RoomPage({ params }: { params: Promise<{ roomId: string 
                 </div>
 
             </div>
+            {exitModal}
         </main>
     );
 }

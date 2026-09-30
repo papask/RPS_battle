@@ -48,7 +48,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // lang is set client-side from the detected language (see i18n.ts)
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${pixelSans.variable} ${pixelMono.variable} ${pixelFont.variable}`}
       >
