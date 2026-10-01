@@ -7,8 +7,6 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Card from './Card';
-import PixelSprite from './PixelSprite';
-import { useCardArt, moveSprite } from '@/cardArt';
 
 interface GameBoardProps {
     room: IRoom;
@@ -23,7 +21,6 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
     const router = useRouter();
     const [selectedMove, setSelectedMove] = useState<Move>(null);
     const [timeLeft, setTimeLeft] = useState(3);
-    const cardArt = useCardArt();
 
     // Identify Opponent
     const opponent = room.players.find(p => p.id !== me.id);
@@ -112,27 +109,6 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
 
 
     // --- Render Helpers ---
-
-    const renderOpponentDeckCounts = () => {
-        const showCounts = room.mode !== 'classic' && !room.isSuddenDeath && opponent?.deck;
-
-        if (!showCounts && !opponent?.deck) return null;
-
-        // In classic mode, we might want to just show that they have "infinite" or just hide counts but show the hand.
-        // If deck exists, we show it.
-        if (!opponent?.deck) return null;
-
-        return (
-            <div className="px-panel flex gap-3 px-3 py-2 mt-2">
-                {(['rock', 'paper', 'scissors'] as const).map(m => (
-                    <div key={m} className="flex flex-col items-center gap-1 w-8">
-                        <PixelSprite name={moveSprite(m, cardArt)} size={24} />
-                        <span className="font-pixel text-[8px] text-[#F4F4F4]">{opponent.deck![m]}</span>
-                    </div>
-                ))}
-            </div>
-        );
-    };
 
     const renderScore = (score: number) => (
         <span className="font-pixel text-[10px] bg-[#FFCD75] text-[#1A1C2C] border-2 border-[#1A1C2C] px-1.5 py-0.5" aria-label={`score ${score}`}>
@@ -264,7 +240,6 @@ export default function GameBoard({ room, me, gameOverReason, eloChanges }: Game
                             </span>
                             {renderScore(opponent?.score ?? 0)}
                         </div>
-                        {renderOpponentDeckCounts()}
                     </div>
                 </div>
 

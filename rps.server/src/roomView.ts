@@ -1,12 +1,13 @@
 import { IRoom } from './types';
 
-// What `viewerId` may see of a room. Opponents' move history and inventory never leave
-// the server, and while a round is open their pick is hidden (only whether they picked).
+// What `viewerId` may see of a room. Opponents' move history, inventory and remaining cards
+// never leave the server (card counting is the player's job: they have to remember), and
+// while a round is open their pick is hidden (only whether they picked).
 export const viewFor = (room: IRoom, viewerId: string) => ({
     ...room,
     players: room.players.map(p => {
         if (p.id === viewerId) return p;
-        const { behavior, inventory, ...visible } = p;
+        const { behavior, inventory, deck, ...visible } = p;
         return room.gameState === 'PLAYING' ? { ...visible, move: null, hasMoved: !!p.move } : visible;
     }),
 });

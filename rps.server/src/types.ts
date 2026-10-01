@@ -7,7 +7,6 @@ export interface IUser {
     roomId?: string;
     isDisconnected?: boolean;
     isBot?: boolean;
-    disconnectTimeout?: NodeJS.Timeout;
 
     // Database Fields (Synced)
     _id?: string; // MongoDB ID

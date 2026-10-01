@@ -232,7 +232,7 @@ io.on('connection', (socket) => {
         const user = roomManager.getUser(socket.id);
         if (user && user.roomId === roomId) {
             // Explicit leave: Clear any pending disconnect timeout just in case
-            if (user.disconnectTimeout) clearTimeout(user.disconnectTimeout);
+            roomManager.clearDisconnectTimer(user);
 
             const room = roomManager.getRooms().find(r => r.id === roomId);
             if (room && room.players.length === 2) {

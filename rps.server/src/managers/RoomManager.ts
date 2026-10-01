@@ -4,6 +4,14 @@ import { IRoom, IUser, GameMode } from '../types';
 export class RoomManager {
     private rooms: Map<string, IRoom> = new Map();
     private users: Map<string, IUser> = new Map();
+    // Reconnect grace timers live here, not on the user: user objects get emitted to clients, and a
+    // Timeout is circular (socket.io's serializer recursed on it until the server crashed).
+    private disconnectTimers = new Map<IUser, NodeJS.Timeout>();
+
+    clearDisconnectTimer(user: IUser) {
+        clearTimeout(this.disconnectTimers.get(user));
+        this.disconnectTimers.delete(user);
+    }
 
     createRoom(roomId: string, mode: GameMode = 'normal'): IRoom {
         if (this.rooms.has(roomId)) {
@@ -132,12 +140,13 @@ export class RoomManager {
             console.log(`[RoomManager] User ${user.nickname} (${socketId}) disconnected. Waiting for reconnect...`);
 
             // Clear existing timeout if any (shouldn't happen usually)
-            if (user.disconnectTimeout) clearTimeout(user.disconnectTimeout);
+            this.clearDisconnectTimer(user);
 
-            user.disconnectTimeout = setTimeout(() => {
+            this.disconnectTimers.set(user, setTimeout(() => {
+                this.disconnectTimers.delete(user);
                 console.log(`[RoomManager] User ${user.nickname} (${socketId}) timed out.`);
                 onTimeout(); // Callback to forfeit/leave
-            }, 10000); // 10 seconds grace period
+            }, 10000)); // 10 seconds grace period
 
             return true; // We handled it (delayed removal)
         }
@@ -161,11 +170,7 @@ export class RoomManager {
     }
 
     reconnectUser(newSocketId: string, user: IUser) {
-        // Clear timeout
-        if (user.disconnectTimeout) {
-            clearTimeout(user.disconnectTimeout);
-            user.disconnectTimeout = undefined;
-        }
+        this.clearDisconnectTimer(user);
         user.isDisconnected = false;
 
         // Update Key in Map: Remove old socket ID, Add new socket ID
